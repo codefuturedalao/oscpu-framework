@@ -26,8 +26,9 @@ wire [4 : 0]rs2_r_addr;
 wire rd_w_ena;
 wire [4 : 0]rd_w_addr;
 // id_stage -> exe_stage
-wire [4 : 0]inst_type;
-wire [7 : 0]inst_opcode;
+//wire [4 : 0]inst_type;
+//wire [7 : 0]inst_opcode;
+wire [`ALU_OP_BUS] alu_op;
 wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
 
@@ -61,20 +62,22 @@ id_stage Id_stage(
   .rs2_r_addr(rs2_r_addr),
   .rd_w_ena(rd_w_ena),
   .rd_w_addr(rd_w_addr),
-  .inst_type(inst_type),
-  .inst_opcode(inst_opcode),
+  //.inst_type(inst_type),
+  //.inst_opcode(inst_opcode),
+  .alu_op(alu_op),
   .op1(op1),
   .op2(op2)
 );
 
 exe_stage Exe_stage(
   .rst(rst),
-  .inst_type_i(inst_type),
-  .inst_opcode(inst_opcode),
+  //.inst_type_i(inst_type),
+  //.inst_opcode(inst_opcode),
+  .alu_op(alu_op),
   .op1(op1),
   .op2(op2),
   
-  .inst_type_o(inst_type_o),
+  //.inst_type_o(inst_type_o),
   .rd_data(rd_data)
 );
 

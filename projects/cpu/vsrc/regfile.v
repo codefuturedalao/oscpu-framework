@@ -60,7 +60,7 @@ module regfile(
 		end
 		else 
 		begin
-			if ((w_ena == 1'b1) && (w_addr != 5'h00))	
+			if ((w_ena == `REG_WENABLE) && (w_addr != 5'h00))	
 				regs[w_addr] <= w_data;
 		end
 	end
@@ -68,7 +68,7 @@ module regfile(
 	always @(*) begin
 		if (rst == 1'b1)
 			r_data1 = `ZERO_WORD;
-		else if (r_ena1 == 1'b1)
+		else if (r_ena1 == `REG_RENABLE)
 			r_data1 = regs[r_addr1];
 		else
 			r_data1 = `ZERO_WORD;
@@ -77,7 +77,7 @@ module regfile(
 	always @(*) begin
 		if (rst == 1'b1)
 			r_data2 = `ZERO_WORD;
-		else if (r_ena2 == 1'b1)
+		else if (r_ena2 == `REG_RENABLE)
 			r_data2 = regs[r_addr2];
 		else
 			r_data2 = `ZERO_WORD;
