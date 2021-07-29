@@ -15,11 +15,13 @@ module regfile(
 	
 	input  wire  [4  : 0] r_addr2,
 	output reg   [`REG_BUS] r_data2,
-	input  wire 		  r_ena2
+	input  wire 		  r_ena2,
+	output wire [`REG_BUS] regs_o[0 : 31]
     );
 
     // 32 registers
 	reg [`REG_BUS] 	regs[0 : 31];
+	assign regs_o = regs;
 	
 	always @(posedge clk) 
 	begin

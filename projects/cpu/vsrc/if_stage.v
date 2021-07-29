@@ -20,7 +20,7 @@ always@( posedge clk )
 begin
   if( rst == 1'b1 )
   begin
-    pc <= `ZERO_WORD ;
+    pc <= `PC_START;
   end
   else
   begin

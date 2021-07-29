@@ -15,6 +15,7 @@ module adder64(
 	cla_adder mycla_adder(op1, op2, cin, result, cout, cout_63);
 	assign overflow = cout ^ cout_63;
 	assign sign = result[63];
+	assign carry = cout ^ cin;
 
 
 endmodule
