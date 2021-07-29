@@ -92,7 +92,38 @@ always
 						`FUN3_ADDI : begin
 							alu_op = `ALU_ADD;
 						end
+						`FUN3_SLTI : begin
+							alu_op = `ALU_SLT;
+						end
+						`FUN3_SLTIU : begin
+							alu_op = `ALU_SLTU;
+						end
+						`FUN3_XORI : begin
+							alu_op = `ALU_XOR;
+						end
+						`FUN3_ORI: begin
+							alu_op = `ALU_OR;
+						end
+						`FUN3_ANDI : begin
+							alu_op = `ALU_AND;
+						end
+						`FUN3_SL : begin
+							alu_op = `ALU_SLL;
+							op2 = {58'b0, inst[25:20]};
+						end
+						`FUN3_SR : begin
+							op2 = {58'b0, inst[25:20]};
+							case(inst[30]) 
+								1'b0 : begin		//logical
+									alu_op = `ALU_SRL;
+								end
+								1'b1 : begin
+									alu_op = `ALU_SRA;
+								end
+							endcase
+						end
 						default : begin
+							alu_op = `ALU_ZERO;
 						end
 					endcase
 				end
