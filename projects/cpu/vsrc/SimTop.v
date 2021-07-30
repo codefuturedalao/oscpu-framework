@@ -21,6 +21,7 @@ module SimTop(
 wire [63 : 0] pc;
 wire [63 : 0] new_pc;
 wire [63 : 0] b_offset;
+wire [`REG_BUS] j_offset;
 wire [31 : 0] inst;
 wire inst_ena;
 
@@ -43,6 +44,9 @@ pc_mux Pc_mux(
 	.branch(branch),
 	.b_flag(b_flag),
 	.b_offset(b_offset),
+	.jump(jump),
+	.j_offset(j_offset),
+	.rs1_data(r_data1),
 	
 	.new_pc(new_pc)
 );
@@ -61,6 +65,7 @@ wire [`ALU_OP_BUS] alu_op;
 wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
 wire branch;
+wire [1:0] jump;
 
 // regfile -> id_stage
 wire [`REG_BUS] r_data1;
@@ -90,6 +95,7 @@ regfile Regfile(
 id_stage Id_stage(
   .rst(rst),
   .inst(inst),
+  .pc(pc),
   .rs1_data(r_data1),
   .rs2_data(r_data2),
   
@@ -103,7 +109,9 @@ id_stage Id_stage(
   .op1(op1),
   .op2(op2),
 	.branch(branch),
-	.b_offset(b_offset)
+	.b_offset(b_offset),
+	.jump(jump),
+	.j_offset(j_offset)
 );
 
 // exe_stage

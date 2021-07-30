@@ -6,6 +6,7 @@
 module id_stage(
   	input wire rst,
   	input wire [31 : 0]inst,
+	input wire [`REG_BUS] pc,
   	input wire [`REG_BUS]rs1_data,
   	input wire [`REG_BUS]rs2_data,
   	
@@ -23,7 +24,9 @@ module id_stage(
   	output reg [`REG_BUS]op1,
   	output reg [`REG_BUS]op2,
 	output wire branch,
-	output wire [`REG_BUS] b_offset
+	output wire [`REG_BUS] b_offset,
+	output wire [1:0] jump,
+	output wire [`REG_BUS] j_offset
 );
 
 
@@ -43,14 +46,15 @@ wire [`REG_BUS] immJ = {{44{inst[31]}}, inst[19 : 12], inst[20], inst[30 : 21], 
 /* use wire not always to generate combinational circuit for fun, no other reason..., may be bad for
    forward compatibility */
 assign branch = opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
-wire jump = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] )
-			| (opcode[6] & opcode[5] & ~opcode[4] & opcode[3] & opcode[2] & opcode[1] & opcode[0] );
+assign jump[0] = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JALR
+assign jump[1] =  (opcode[6] & opcode[5] & ~opcode[4] & opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JAL
 //load
 wire mem_to_reg = ~opcode[6] & ~opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 //store 
 wire mem_w_ena = ~opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 
 assign b_offset = immB;
+assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
 
 
 
@@ -170,6 +174,23 @@ always
 						`FUN3_BGEU: begin alu_op = `ALU_BGEU; end	
 						default: begin alu_op = `ALU_ZERO; end
 					endcase
+				end
+				//actually it is a default situation
+				`JAL: begin
+					rs1_r_ena = `REG_RDISABLE;
+					rs2_r_ena = `REG_RDISABLE;
+					rd_w_ena = `REG_WENABLE;		//pc + 4
+					op1 = pc;
+					op2 = 4;
+					alu_op = `ALU_ADD;		
+				end
+				`JALR: begin
+					rs1_r_ena = `REG_RENABLE;		//rs + imm
+					rs2_r_ena = `REG_RDISABLE;
+					rd_w_ena = `REG_WENABLE;		//pc + 4
+					op1 = pc;
+					op2 = 4;
+					alu_op = `ALU_ADD;		
 				end
 				default : begin
 					rs1_r_ena = `REG_RDISABLE;
