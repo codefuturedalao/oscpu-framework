@@ -83,8 +83,6 @@ id_stage Id_stage(
   .rs2_r_addr(rs2_r_addr),
   .rd_w_ena(rd_w_ena),
   .rd_w_addr(rd_w_addr),
-  //.inst_type(inst_type),
-  //.inst_opcode(inst_opcode),
   .alu_op(alu_op),
   .op1(op1),
   .op2(op2)

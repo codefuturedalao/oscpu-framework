@@ -37,7 +37,8 @@ always
     		case( alu_op )
 	  			`ALU_ADD: begin 
 					//already set op1 and op2 
-					rd_data = result_add;  
+					//rd_data = result_add;  
+					rd_data = `ZERO_WORD;
 				end
 	 			`ALU_SLT: begin 
 					//op1_add = op1;
