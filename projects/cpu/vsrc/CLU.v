@@ -5,8 +5,8 @@ module CLU (
 	input c0,
 	
 	output [4 : 1]c,
-	output g_o,
-	output p_o
+	output p_o,
+	output g_o
 );
 	assign c[1] = g[1] | (p[1] & c0);
 	assign c[2] = g[2] | (p[2] & g[1]) | (p[2] & p[1] & c0);

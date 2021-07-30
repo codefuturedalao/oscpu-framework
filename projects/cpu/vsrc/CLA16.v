@@ -4,8 +4,8 @@ module CLA16(
 	input [15:0] y,
 	input cin,
 	output [15:0] f,
-	output g_o,
 	output p_o,
+	output g_o,
 	output cout
 );
 	wire [4:0] c;
@@ -15,7 +15,7 @@ module CLA16(
 	CLA4 a2(x[7:4], y[7:4], c[1], f[7:4], p[2], g[2], useless_pin[1]);
 	CLA4 a3(x[11:8], y[11:8], c[2], f[11:8], p[3], g[3], useless_pin[2]);
 	CLA4 a4(x[15:12], y[15:12], c[3], f[15:12], p[4], g[4], cout);
-	CLU clu(p, g, cin, c[4:1], g_o, p_o);
+	CLU clu(p, g, cin, c[4:1], p_o, g_o);
 	
 endmodule
 
