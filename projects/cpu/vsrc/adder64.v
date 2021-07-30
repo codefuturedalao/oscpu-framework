@@ -9,13 +9,14 @@ module adder64(
 	output wire overflow,
 	output wire sign,
 	output wire cout,
-	output wire carry
+	output wire carry,
+	output wire zero
 );
 	wire cout_63;
 	cla_adder mycla_adder(op1, op2, cin, result, cout, cout_63);
 	assign overflow = cout ^ cout_63;
 	assign sign = result[63];
 	assign carry = cout ^ cin;
-
+	assign zero = ~(|result);
 
 endmodule

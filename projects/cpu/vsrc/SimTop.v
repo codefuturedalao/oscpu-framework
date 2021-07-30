@@ -19,8 +19,35 @@ module SimTop(
 
 // if_stage
 wire [63 : 0] pc;
+wire [63 : 0] new_pc;
+wire [63 : 0] b_offset;
 wire [31 : 0] inst;
 wire inst_ena;
+
+wire clk = clock;
+wire rst = reset;
+
+/* if stage */
+if_stage If_stage(
+  .clk(clk),
+  .rst(rst),
+	.new_pc(new_pc),
+  
+  .inst_addr(pc),
+  .inst_ena(inst_ena)
+);
+
+
+pc_mux Pc_mux(
+	.old_pc(pc),
+	.branch(branch),
+	.b_flag(b_flag),
+	.b_offset(b_offset),
+	
+	.new_pc(new_pc)
+);
+	
+
 // id_stage
 // id_stage -> regfile
 wire rs1_r_ena;
@@ -33,24 +60,13 @@ wire [4 : 0]rd_w_addr;
 wire [`ALU_OP_BUS] alu_op;
 wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
+wire branch;
 
 // regfile -> id_stage
 wire [`REG_BUS] r_data1;
 wire [`REG_BUS] r_data2;
 // regfile -> difftest
 wire [`REG_BUS] regs[0 : 31];
-wire clk = clock;
-wire rst = reset;
-
-/* if stage */
-if_stage If_stage(
-  .clk(clk),
-  .rst(rst),
-  
-  .inst_addr(pc),
-  .inst_ena(inst_ena)
-);
-
 
 /* id stage */
 regfile Regfile(
@@ -85,12 +101,15 @@ id_stage Id_stage(
   .rd_w_addr(rd_w_addr),
   .alu_op(alu_op),
   .op1(op1),
-  .op2(op2)
+  .op2(op2),
+	.branch(branch),
+	.b_offset(b_offset)
 );
 
 // exe_stage
 // exe_stage -> other stage
 wire [4 : 0]inst_type_o;
+wire b_flag;
 // exe_stage -> regfile
 wire [`REG_BUS]rd_data;
 
@@ -101,7 +120,8 @@ exe_stage Exe_stage(
   .op1(op1),
   .op2(op2),
   
-  .rd_data(rd_data)
+  .rd_data(rd_data),
+	.b_flag(b_flag)
 );
 
 

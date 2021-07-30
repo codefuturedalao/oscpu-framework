@@ -4,8 +4,9 @@
 `include "defines.v"
 
 module if_stage(
-  input wire clk,
-  input wire rst,
+  	input wire clk,
+  	input wire rst,
+	input wire [`REG_BUS] new_pc,
   
   output wire [63 : 0]inst_addr,
   output wire         inst_ena
@@ -23,7 +24,7 @@ begin
   end
   else
   begin
-    pc <= pc + 4;
+    pc <= new_pc;
   end
 end
 
