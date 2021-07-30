@@ -80,7 +80,7 @@ always
 		else begin
 			case(opcode)
 				`OP_IMM : begin			//register-immediate instruction
-				//addi stli stliu xori ori andi slli srli srai	
+				//addi slti sltiu xori ori andi slli srli srai	
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RDISABLE;						
 					rd_w_ena = `REG_WENABLE;
