@@ -79,7 +79,7 @@ assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
 
 
 /* memory signal */
-//TODO: byte_enable should change with address
+//caution: byte_enable should change with address
 always
 	@(*) begin
 		if(rst == 1'b1) begin
@@ -128,6 +128,33 @@ always
 		end
 		else begin
 			case(opcode)
+				`OP_IMM32: begin
+					rs1_r_ena = `REG_RENABLE;
+					rs2_r_ena = `REG_RDISABLE;						
+					rd_w_ena = `REG_WENABLE;
+					op1 = rs1_data;
+					op2 = immI;
+					case(func3)
+						`FUN3_ADDI : begin	alu_op = `ALU_ADDW; end
+						//TODO: inst[25] != 0 causes a trap
+						`FUN3_SL : begin
+							alu_op = `ALU_SLLW;
+							op2 = {59'b0, inst[24:20]};
+						end
+						`FUN3_SR : begin
+							op2 = {59'b0, inst[24:20]};
+							case(inst[30]) 
+								1'b0 : begin		//logical
+									alu_op = `ALU_SRLW;
+								end
+								1'b1 : begin
+									alu_op = `ALU_SRAW;
+								end
+							endcase
+						end
+						default : begin alu_op = `ALU_ZERO; end
+					endcase
+				end
 				`OP_IMM : begin			//register-immediate instruction
 				//addi slti sltiu xori ori andi slli srli srai	
 					rs1_r_ena = `REG_RENABLE;
@@ -159,6 +186,37 @@ always
 						end
 						default : begin alu_op = `ALU_ZERO; end
 					endcase
+				end
+				`OP32: begin
+					rs1_r_ena = `REG_RENABLE;
+					rs2_r_ena = `REG_RENABLE;						
+					rd_w_ena = `REG_WENABLE;
+					op1 = rs1_data;
+					op2 = rs2_data;
+					case(func3)
+						`FUN3_ADD_SUB : begin
+							case(inst[30])		//no need for default
+								1'b0 : begin		//ADD
+									alu_op = `ALU_ADDW;
+								end
+								1'b1 : begin
+									alu_op = `ALU_SUBW;
+								end
+							endcase
+						end
+						`FUN3_SL : begin alu_op = `ALU_SLLW; end
+						`FUN3_SR : begin
+							case(inst[30]) 
+								1'b0 : begin		//logical
+									alu_op = `ALU_SRLW;
+								end
+								1'b1 : begin
+									alu_op = `ALU_SRAW;
+								end
+							endcase
+						end
+						default: begin alu_op = `ALU_ZERO; end
+					endcase	
 				end
 				`OP: begin
 					rs1_r_ena = `REG_RENABLE;

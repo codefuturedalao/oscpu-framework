@@ -95,6 +95,12 @@
 `define ALU_BLTU	5'b10000
 `define ALU_BGEU	5'b10001
 
+`define ALU_ADDW 5'b10010
+`define ALU_SUBW 5'b10011
+`define ALU_SLLW 5'b10100
+`define ALU_SRLW 5'b10101
+`define ALU_SRAW 5'b10110
+
 /* ----mem stage---- */
 `define MEM_UNSIGNED 1'b0
 `define MEM_SIGNED 1'b1

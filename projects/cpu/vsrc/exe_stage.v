@@ -28,7 +28,7 @@ wire [`REG_BUS] result_add;
 always
 	@(*) begin
 		case( alu_op ) 
-	  		`ALU_SUB,  `ALU_SLT, `ALU_SLTU,`ALU_BEQ, `ALU_BNE, `ALU_BLT, `ALU_BGE, `ALU_BLTU, `ALU_BGEU: begin
+	  		`ALU_SUB, `ALU_SUBW, `ALU_SLT, `ALU_SLTU,`ALU_BEQ, `ALU_BNE, `ALU_BLT, `ALU_BGE, `ALU_BLTU, `ALU_BGEU: begin
 				op1_add = op1;
 				 op2_add = ~op2; 
 			     cin = 1'b1;
@@ -42,6 +42,13 @@ always
 	end
 
 /* calculate rd_data */
+//TODO: i am not sure >>> is arth shift due to some reason
+wire [`REG_BUS] sll_result = op1 << op2;
+wire [31 : 0] sll_result32 = op1[31:0] << op2;
+wire [`REG_BUS] srl_result = op1 >> op2;
+wire [31 : 0] srl_result32 = op1[31 : 0] >> op2;
+wire [`REG_BUS] sra_result = op1 >>> op2;
+wire [31 : 0] sra_result32 = op1[31 : 0] >>> op2;
 always
 	@(*) begin
  		if( rst == 1'b1 ) begin
@@ -50,15 +57,20 @@ always
   		else begin
     		case( alu_op )
 	  			`ALU_ADD: begin rd_data = result_add; end
+	  			`ALU_ADDW: begin rd_data = {{32{result_add[31]}}, result_add[31 : 0]}; end
 	  			`ALU_SUB: begin rd_data = result_add; end
+	  			`ALU_SUBW: begin rd_data = {{32{result_add[31]}}, result_add[31 : 0]}; end
 	 			`ALU_SLT: begin rd_data = {63'b0 , sign ^ overflow}; end
 	  			`ALU_SLTU: begin rd_data = {63'b0, carry}; end
 	  			`ALU_XOR: begin rd_data = op1 ^ op2;  end
 	  			`ALU_OR: begin rd_data = op1 | op2;  end
 	  			`ALU_AND: begin rd_data = op1 & op2;  end
-	  			`ALU_SLL: begin rd_data = op1 << op2;  end
-	  			`ALU_SRL: begin rd_data = op1 >> op2;  end
-	  			`ALU_SRA: begin rd_data = op1 >>> op2;  end
+	  			`ALU_SLL: begin rd_data = sll_result;  end
+	  			`ALU_SRL: begin rd_data = srl_result;  end
+	  			`ALU_SRA: begin rd_data = sra_result;  end
+	  			`ALU_SLLW: begin rd_data = {{32{sll_result32[31]}}, sll_result32[31:0]};  end
+	  			`ALU_SRLW: begin rd_data = {{32{srl_result32[31]}}, srl_result32[31:0]};  end
+	  			`ALU_SRAW: begin rd_data = {{32{sra_result32[31]}}, sra_result32[31:0]};  end
 	  			`ALU_LUI: begin rd_data = op2;  end
 	  			default:  begin rd_data = `ZERO_WORD; end
 			endcase
