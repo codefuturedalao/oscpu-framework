@@ -66,6 +66,14 @@ wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
 wire branch;
 wire [1:0] jump;
+// id_stage -> mem_stage
+wire mem_r_ena;
+wire mem_w_ena;
+wire mem_to_reg;
+wire mem_ext_un;
+wire [7 : 0] byte_enable;
+
+wire [`REG_BUS]rd_data;
 
 // regfile -> id_stage
 wire [`REG_BUS] r_data1;
@@ -91,6 +99,16 @@ regfile Regfile(
   .regs_o(regs)
 );
 
+rd_wmux Rd_wmux(
+	.alu_result(alu_result),
+	.mem_data(mem_rdata),
+	.mem_to_reg(mem_to_reg),
+	.mem_ext_un(mem_ext_un),
+	.byte_enable(byte_enable),
+	
+	.rd_wdata(rd_data)
+);
+
 
 id_stage Id_stage(
   .rst(rst),
@@ -111,7 +129,13 @@ id_stage Id_stage(
 	.branch(branch),
 	.b_offset(b_offset),
 	.jump(jump),
-	.j_offset(j_offset)
+	.j_offset(j_offset),
+	.mem_r_ena(mem_r_ena),
+	.mem_w_ena(mem_w_ena),
+	.mem_to_reg(mem_to_reg),
+	.byte_enable(byte_enable),
+	.mem_ext_un(mem_ext_un)
+	
 );
 
 // exe_stage
@@ -119,7 +143,7 @@ id_stage Id_stage(
 wire [4 : 0]inst_type_o;
 wire b_flag;
 // exe_stage -> regfile
-wire [`REG_BUS]rd_data;
+wire [`REG_BUS]alu_result;
 
 /* exe stage */
 exe_stage Exe_stage(
@@ -128,25 +152,52 @@ exe_stage Exe_stage(
   .op1(op1),
   .op2(op2),
   
-  .rd_data(rd_data),
+  .rd_data(alu_result),
 	.b_flag(b_flag)
 );
 
 
 // Access memory
-reg [63:0] rdata;
-RAMHelper RAMHelper(
-  .clk              (clock),
-  .en               (inst_ena),
-  .rIdx             ((pc - `PC_START) >> 3),
-  .rdata            (rdata),
-  .wIdx             (0),
-  .wdata            (0),
-  .wmask            (0),
-  .wen              (0)
-);
-assign inst = pc[2] ? rdata[63 : 32] : rdata[31 : 0];
+reg [63:0] inst_rdata;
+wire [`REG_BUS] mem_raddr;
+wire [`REG_BUS] mem_rdata;
+wire [`REG_BUS] mem_waddr;
+wire [`REG_BUS] mem_wdata;
+wire [`REG_BUS] wmask;
 
+wire [7 : 0] byte_en_new;
+
+// waddr is same as raddr
+assign mem_waddr = alu_result;
+assign mem_raddr = alu_result;
+assign mem_wdata = r_data2 << alu_result[2:0];
+
+assign byte_en_new = byte_enable << alu_result[2:0];
+
+assign wmask = { {8{byte_en_new[7]}},
+                {8{byte_en_new[6]}},
+                {8{byte_en_new[5]}},
+                {8{byte_en_new[4]}},
+                {8{byte_en_new[3]}},
+                {8{byte_en_new[2]}},
+                {8{byte_en_new[1]}},
+                {8{byte_en_new[0]}}};
+
+MyRAMHelper RAMHelper(
+  .clk              (clock),
+  .inst_en               (inst_ena),
+  .inst_rIdx             ((pc - `PC_START) >> 3),
+  .inst_rdata            (inst_rdata),
+  .data_en               (mem_r_ena),
+  .data_rIdx             (mem_raddr >> 3),
+  .data_rdata            (mem_rdata),
+  .wIdx             (mem_waddr >> 3),
+  .wdata            (mem_wdata),
+  .wmask            (wmask),
+  .wen              (mem_w_ena)
+);
+assign inst = pc[2] ? inst_rdata[63 : 32] : inst_rdata[31 : 0];
+//assign mem_data = [2] ? mem_rdata[63 : 32] : mem_rdata[31 : 0];
 
 
 // Difftest

@@ -1,5 +1,4 @@
-
-//--xuezhen--
+//assume load and store are align
 
 `include "defines.v"
 
@@ -18,15 +17,19 @@ module id_stage(
   	output reg rd_w_ena,
   	output wire [4 : 0]rd_w_addr,
   
-  	//output wire [4 : 0]inst_type,
-  	//output wire [7 : 0]inst_opcode,
   	output reg [`ALU_OP_BUS] alu_op,
   	output reg [`REG_BUS]op1,
   	output reg [`REG_BUS]op2,
 	output wire branch,
 	output wire [`REG_BUS] b_offset,
 	output wire [1:0] jump,
-	output wire [`REG_BUS] j_offset
+	output wire [`REG_BUS] j_offset,
+
+	output wire mem_r_ena,
+	output wire mem_w_ena,
+	output wire mem_to_reg,
+	output reg [7:0] byte_enable,
+	output wire mem_ext_un
 );
 
 
@@ -43,18 +46,19 @@ wire [`REG_BUS] immB = {{52{inst[31]}}, inst[7] ,inst[30 : 25], inst[11 : 8], 1'
 wire [`REG_BUS] immU = {{32{inst[31]}}, inst[31 : 12], 12'b0};
 wire [`REG_BUS] immJ = {{44{inst[31]}}, inst[19 : 12], inst[20], inst[30 : 21], 1'b0};
 
-/* use wire not always to generate combinational circuit for fun, no other reason..., may be bad for
+/* use wire not always@(*) to generate combinational circuit for fun, no other reason..., may be bad for
    forward compatibility */
 assign branch = opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 assign jump[0] = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JALR
 assign jump[1] =  (opcode[6] & opcode[5] & ~opcode[4] & opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JAL
 //load
-wire mem_to_reg = ~opcode[6] & ~opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
+assign mem_to_reg = ~opcode[6] & ~opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
+assign mem_r_ena = mem_to_reg;
 //store 
-wire mem_w_ena = ~opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
-
-assign b_offset = immB;
-assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
+assign mem_w_ena = ~opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
+//lbu lhu lwu
+assign mem_ext_un = ((func3[2] & ~func3[1] & ~func3[0]) | (func3[2] & ~func3[1] & func3[0]) | (func3[2] & func3[1] & ~func3[0])) 
+		& ~opcode[6] & ~opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 
 
 
@@ -69,6 +73,47 @@ assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
 assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
 assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
+assign b_offset = immB;
+assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
+
+
+
+/* memory signal */
+//TODO: byte_enable should change with address
+always
+	@(*) begin
+		if(rst == 1'b1) begin
+			byte_enable = 8'b0;
+		end
+		else begin
+			case(opcode)
+				`LOAD: begin
+					case(func3)
+						`FUN3_LB: begin byte_enable = {7'b0, 1'b1}; end
+						`FUN3_LBU: begin byte_enable = {7'b0, 1'b1}; end
+						`FUN3_LH: begin byte_enable = {6'b0, 2'b1}; end
+						`FUN3_LHU: begin byte_enable = {6'b0, 2'b1}; end
+						`FUN3_LW: begin byte_enable = {4'b0, 4'b1}; end
+						`FUN3_LWU: begin byte_enable = {4'b0, 4'b1}; end
+						`FUN3_LD: begin	byte_enable = 8'b1; end
+						default: begin byte_enable = 8'b0; end
+					endcase
+				end
+				`STORE: begin
+					case(func3)
+						`FUN3_SB: begin byte_enable = {7'b0, 1'b1}; end
+						`FUN3_SH: begin byte_enable = {6'b0, 2'b1}; end
+						`FUN3_SW: begin byte_enable = {4'b0, 4'b1}; end
+						`FUN3_SD: begin byte_enable = 8'b1; end
+						default: begin byte_enable = 8'b0; end
+					endcase
+				end
+				default : begin byte_enable = 8'b0; end
+			endcase
+		end
+	end
+
+/* regfile signal and exe signal */
 
 always
     @(*) begin
@@ -175,7 +220,6 @@ always
 						default: begin alu_op = `ALU_ZERO; end
 					endcase
 				end
-				//actually it is a default situation
 				`JAL: begin
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
@@ -190,6 +234,30 @@ always
 					rd_w_ena = `REG_WENABLE;		//pc + 4
 					op1 = pc;
 					op2 = 4;
+					alu_op = `ALU_ADD;		
+				end
+				`AUIPC: begin
+					rs1_r_ena = `REG_RDISABLE;
+					rs2_r_ena = `REG_RDISABLE;
+					rd_w_ena = `REG_WENABLE;		//pc + immU
+					op1 = pc;
+					op2 = immU;
+					alu_op = `ALU_ADD;		
+				end
+				`LOAD: begin
+					rs1_r_ena = `REG_RENABLE;		//rs + imm ->address
+					rs2_r_ena = `REG_RDISABLE;
+					rd_w_ena = `REG_WENABLE;		
+					op1 = rs1_data;
+					op2 = immI;
+					alu_op = `ALU_ADD;		
+				end
+				`STORE: begin
+					rs1_r_ena = `REG_RENABLE;		//rs + imm
+					rs2_r_ena = `REG_RENABLE;
+					rd_w_ena = `REG_WDISABLE;		
+					op1 = rs1_data;
+					op2 = immS;
 					alu_op = `ALU_ADD;		
 				end
 				default : begin

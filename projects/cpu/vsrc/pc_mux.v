@@ -17,7 +17,9 @@ module pc_mux(
 	*/
 	reg [`REG_BUS] op1;
 	reg [`REG_BUS] op2;
-	assign new_pc = op1 + op2;
+	wire [`REG_BUS] result;
+	assign result = op1 + op2;
+	assign new_pc = {result[63:1], jump[0] == 1 ? 1'b0 : result[0]};		//JALR make the least significant bit zero
 
 	always
 		@(*) begin

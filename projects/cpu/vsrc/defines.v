@@ -16,12 +16,16 @@
 */
 //opcode
 `define OP_IMM 7'b0010011
+`define OP_IMM32 7'b0011011
 `define OP 7'b0110011
+`define OP32 7'b0111011
 `define LUI 7'b0110111
 `define BRANCH 7'b1100011
 `define JAL 7'b1101111
 `define JALR 7'b1100111
 `define AUIPC 7'b0010111
+`define LOAD 7'b0000011
+`define STORE 7'b0100011
 
 //func3
 `define FUN3_ADDI 3'b000
@@ -50,6 +54,20 @@
 `define FUN3_BLTU 3'b110
 `define FUN3_BGEU 3'b111
 
+`define FUN3_LB 3'b000
+`define FUN3_LH 3'b001
+`define FUN3_LW 3'b010
+`define FUN3_LBU 3'b100
+`define FUN3_LHU 3'b101
+`define FUN3_LWU 3'b110
+`define FUN3_LD 3'b011
+
+
+`define FUN3_SB 3'b000
+`define FUN3_SH 3'b001
+`define FUN3_SW 3'b010
+`define FUN3_SD 3'b011
+
 `define REG_RENABLE 1'b1
 `define REG_RDISABLE 1'b0
 `define REG_WENABLE 1'b1
@@ -76,3 +94,7 @@
 `define ALU_BGE	5'b01111
 `define ALU_BLTU	5'b10000
 `define ALU_BGEU	5'b10001
+
+/* ----mem stage---- */
+`define MEM_UNSIGNED 1'b0
+`define MEM_SIGNED 1'b1
