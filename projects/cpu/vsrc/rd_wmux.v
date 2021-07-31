@@ -23,7 +23,8 @@ module rd_wmux(
                 {8{byte_en_new[2]}},
                 {8{byte_en_new[1]}},
                 {8{byte_en_new[0]}}};
-	assign mem_data_new = (mem_data & mask) >> alu_result[2:0];
+	wire [5 : 0] shift_bit = alu_result[2:0] << 3;
+	assign mem_data_new = (mem_data & mask) >> shift_bit;
 	//load or other
 	always
 		@(*) begin
