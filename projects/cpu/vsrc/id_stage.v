@@ -22,13 +22,13 @@ module id_stage(
   	output reg [`REG_BUS]op2,
 	output wire branch,
 	output wire [`REG_BUS] b_offset,
-	output wire [1:0] jump,
+	output wire [1 : 0] jump,
 	output wire [`REG_BUS] j_offset,
 
 	output wire mem_r_ena,
 	output wire mem_w_ena,
 	output wire mem_to_reg,
-	output reg [7:0] byte_enable,
+	output reg [7 : 0] byte_enable,
 	output wire mem_ext_un
 );
 
@@ -89,22 +89,22 @@ always
 			case(opcode)
 				`LOAD: begin
 					case(func3)
-						`FUN3_LB: begin byte_enable = {7'b0, 1'b1}; end
-						`FUN3_LBU: begin byte_enable = {7'b0, 1'b1}; end
-						`FUN3_LH: begin byte_enable = {6'b0, 2'b1}; end
-						`FUN3_LHU: begin byte_enable = {6'b0, 2'b1}; end
-						`FUN3_LW: begin byte_enable = {4'b0, 4'b1}; end
-						`FUN3_LWU: begin byte_enable = {4'b0, 4'b1}; end
-						`FUN3_LD: begin	byte_enable = 8'b1; end
+						`FUN3_LB: begin byte_enable = 8'b0000_0001; end
+						`FUN3_LBU: begin byte_enable = 8'b0000_0001; end
+						`FUN3_LH: begin byte_enable = 8'b0000_0011; end
+						`FUN3_LHU: begin byte_enable = 8'b0000_0011; end
+						`FUN3_LW: begin byte_enable = 8'b0000_1111; end
+						`FUN3_LWU: begin byte_enable = 8'b0000_1111; end
+						`FUN3_LD: begin	byte_enable = 8'b1111_1111; end
 						default: begin byte_enable = 8'b0; end
 					endcase
 				end
 				`STORE: begin
 					case(func3)
-						`FUN3_SB: begin byte_enable = {7'b0, 1'b1}; end
-						`FUN3_SH: begin byte_enable = {6'b0, 2'b1}; end
-						`FUN3_SW: begin byte_enable = {4'b0, 4'b1}; end
-						`FUN3_SD: begin byte_enable = 8'b1; end
+						`FUN3_SB: begin byte_enable = 8'b0000_0001; end
+						`FUN3_SH: begin byte_enable = 8'b0000_0011; end
+						`FUN3_SW: begin byte_enable = 8'b0000_1111; end
+						`FUN3_SD: begin byte_enable = 8'b1111_1111; end
 						default: begin byte_enable = 8'b0; end
 					endcase
 				end
