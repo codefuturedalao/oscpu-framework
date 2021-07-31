@@ -189,9 +189,9 @@ MyRAMHelper RAMHelper(
   .inst_rIdx             ((pc - `PC_START) >> 3),
   .inst_rdata            (inst_rdata),
   .data_en               (mem_r_ena),
-  .data_rIdx             (mem_raddr >> 3),
+  .data_rIdx             ((mem_raddr - `PC_START) >> 3),
   .data_rdata            (mem_rdata),
-  .wIdx             (mem_waddr >> 3),
+  .wIdx             ((mem_waddr - `PC_START) >> 3),
   .wdata            (mem_wdata),
   .wmask            (wmask),
   .wen              (mem_w_ena)
