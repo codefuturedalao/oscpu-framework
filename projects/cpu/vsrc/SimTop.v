@@ -170,7 +170,8 @@ wire [7 : 0] byte_en_new;
 // waddr is same as raddr
 assign mem_waddr = alu_result;
 assign mem_raddr = alu_result;
-assign mem_wdata = r_data2 << alu_result[2:0];
+wire [5 : 0] shift_bit = alu_result[2:0] << 3;
+assign mem_wdata = r_data2 << shift_bit;
 
 assign byte_en_new = byte_enable << alu_result[2:0];
 
