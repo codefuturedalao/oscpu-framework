@@ -47,8 +47,8 @@ wire [`REG_BUS] sll_result = op1 << op2;
 wire [31 : 0] sll_result32 = op1[31:0] << op2;
 wire [`REG_BUS] srl_result = op1 >> op2;
 wire [31 : 0] srl_result32 = op1[31 : 0] >> op2;
-wire [`REG_BUS] sra_result = op1 >>> op2;
-wire [31 : 0] sra_result32 = op1[31 : 0] >>> op2;
+wire [`REG_BUS] sra_result = (op1 >> op2) | (op1[63] ? ~({64'b1} >> op2) : {64'b0});
+wire [31 : 0] sra_result32 = (op1[31 : 0] >> op2) | (op1[31] ? ~({32'b1} >> op2) : {32'b0});
 always
 	@(*) begin
  		if( rst == 1'b1 ) begin
