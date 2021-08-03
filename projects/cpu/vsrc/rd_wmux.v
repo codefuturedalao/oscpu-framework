@@ -1,4 +1,5 @@
 `include "defines.v"
+/* wb stage */
 module rd_wmux(
 	input wire [`REG_BUS] alu_result,
 	input wire [`REG_BUS] mem_data,

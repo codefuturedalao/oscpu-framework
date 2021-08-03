@@ -17,7 +17,7 @@ module regfile(
 	output reg   [`REG_BUS] r_data2,
 	input  wire 		  r_ena2,
 	output wire [`REG_BUS] regs_o[0 : 31]
-    );
+);
 
     // 32 registers
 	reg [`REG_BUS] 	regs[0 : 31];
@@ -70,8 +70,14 @@ module regfile(
 	always @(*) begin
 		if (rst == 1'b1)
 			r_data1 = `ZERO_WORD;
-		else if (r_ena1 == `REG_RENABLE)
-			r_data1 = regs[r_addr1];
+		else if (r_ena1 == `REG_RENABLE) begin
+			if(r_addr1 == w_addr) begin
+				r_data1 = w_data;
+			end
+			else begin
+				r_data1 = regs[r_addr1];
+			end
+		end
 		else
 			r_data1 = `ZERO_WORD;
 	end
@@ -79,8 +85,14 @@ module regfile(
 	always @(*) begin
 		if (rst == 1'b1)
 			r_data2 = `ZERO_WORD;
-		else if (r_ena2 == `REG_RENABLE)
-			r_data2 = regs[r_addr2];
+		else if (r_ena2 == `REG_RENABLE) begin
+			if(r_addr2 == w_addr) begin
+				r_data2 = w_data;
+			end
+			else begin
+				r_data2 = regs[r_addr2];
+			end
+		end
 		else
 			r_data2 = `ZERO_WORD;
 	end

@@ -5,10 +5,6 @@
 module id_stage(
   	input wire rst,
   	input wire [31 : 0]inst,
-	input wire [`REG_BUS] pc,
-  	input wire [`REG_BUS]rs1_data,
-  	input wire [`REG_BUS]rs2_data,
-  	
   		
   	output reg rs1_r_ena,
   	output wire [4 : 0]rs1_r_addr,
@@ -17,19 +13,27 @@ module id_stage(
   	output reg rd_w_ena,
   	output wire [4 : 0]rd_w_addr,
   
+	/* exe stage signal */
   	output reg [`ALU_OP_BUS] alu_op,
-  	output reg [`REG_BUS]op1,
-  	output reg [`REG_BUS]op2,
+//  	output reg [`REG_BUS]op1,
+ // 	output reg [`REG_BUS]op2,
+	output reg [`REG_BUS] imm,
+	output reg alu_op1_src,
+	output reg [1 : 0] alu_op2_src,
+	/* branch and jump signal */
 	output wire branch,
-	output wire [`REG_BUS] b_offset,
-	output wire [1 : 0] jump,
-	output wire [`REG_BUS] j_offset,
+	//output wire [`REG_BUS] b_offset,
+	output wire jump,
+	output wire pc_src,
+	//output wire [`REG_BUS] j_offset,
 
+	/* mem stage signal */
 	output wire mem_r_ena,
 	output wire mem_w_ena,
-	output wire mem_to_reg,
 	output reg [7 : 0] byte_enable,
-	output wire mem_ext_un
+	/* wb stage signal */
+	output wire mem_ext_un,			
+	output wire mem_to_reg
 );
 
 
@@ -49,8 +53,8 @@ wire [`REG_BUS] immJ = {{44{inst[31]}}, inst[19 : 12], inst[20], inst[30 : 21], 
 /* use wire not always@(*) to generate combinational circuit for fun, no other reason..., may be bad for
    forward compatibility */
 assign branch = opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
-assign jump[0] = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JALR
-assign jump[1] =  (opcode[6] & opcode[5] & ~opcode[4] & opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JAL
+assign jump = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] ) | (opcode[6] & opcode[5] & ~opcode[4] & opcode[3] & opcode[2] & opcode[1] & opcode[0] );	
+assign pc_src = (opcode[6] & opcode[5] & ~opcode[4] & ~opcode[3] & opcode[2] & opcode[1] & opcode[0] );		//JALR
 //load
 assign mem_to_reg = ~opcode[6] & ~opcode[5] & ~opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 assign mem_r_ena = mem_to_reg;
@@ -73,8 +77,8 @@ assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
 assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
 assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
-assign b_offset = immB;
-assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
+//assign b_offset = immB;
+//assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
 
 
 
@@ -122,9 +126,12 @@ always
 			rs1_r_ena = `REG_RDISABLE;
 			rs2_r_ena = `REG_RDISABLE;
 			rd_w_ena = `REG_WDISABLE;
-			op1 = `ZERO_WORD;
-			op2 = `ZERO_WORD;
+			//op1 = `ZERO_WORD;
+			//op2 = `ZERO_WORD;
+			alu_op1_src = `OP1_REG;
+			alu_op2_src = `OP2_REG;
 			alu_op = `ALU_ZERO;
+			imm = `ZERO_WORD;
 		end
 		else begin
 			case(opcode)
@@ -132,17 +139,21 @@ always
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RDISABLE;						
 					rd_w_ena = `REG_WENABLE;
-					op1 = rs1_data;
-					op2 = immI;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_IMM;
+					//op1 = rs1_data;
+					//op2 = immI;
 					case(func3)
 						`FUN3_ADDI : begin	alu_op = `ALU_ADDW; end
 						//TODO: inst[25] != 0 causes a trap
 						`FUN3_SL : begin
 							alu_op = `ALU_SLLW;
-							op2 = {59'b0, inst[24:20]};
+							//op2 = {59'b0, inst[24:20]};
+							//imm = {59'b0, inst[24:20]};
 						end
 						`FUN3_SR : begin
-							op2 = {59'b0, inst[24:20]};
+							//op2 = {59'b0, inst[24:20]};
+							//imm = {59'b0, inst[24:20]};
 							case(inst[30]) 
 								1'b0 : begin		//logical
 									alu_op = `ALU_SRLW;
@@ -160,8 +171,11 @@ always
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RDISABLE;						
 					rd_w_ena = `REG_WENABLE;
-					op1 = rs1_data;
-					op2 = immI;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_IMM;
+					//op1 = rs1_data;
+					//op2 = immI;
+					imm = immI;
 					case(func3)
 						`FUN3_ADDI : begin	alu_op = `ALU_ADD; end
 						`FUN3_SLTI : begin  alu_op = `ALU_SLT; end
@@ -171,10 +185,11 @@ always
 						`FUN3_ANDI : begin alu_op = `ALU_AND; end
 						`FUN3_SL : begin
 							alu_op = `ALU_SLL;
-							op2 = {58'b0, inst[25:20]};
+							//imm = {58'b0, inst[25:20]};
 						end
 						`FUN3_SR : begin
-							op2 = {58'b0, inst[25:20]};
+							//op2 = {58'b0, inst[25:20]};
+							//imm = {58'b0, inst[25:20]};
 							case(inst[30]) 
 								1'b0 : begin		//logical
 									alu_op = `ALU_SRL;
@@ -191,8 +206,11 @@ always
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RENABLE;						
 					rd_w_ena = `REG_WENABLE;
-					op1 = rs1_data;
-					op2 = rs2_data;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_REG;
+					imm = immI;
+					//op1 = rs1_data;
+					//op2 = rs2_data;
 					case(func3)
 						`FUN3_ADD_SUB : begin
 							case(inst[30])		//no need for default
@@ -222,8 +240,11 @@ always
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RENABLE;						
 					rd_w_ena = `REG_WENABLE;
-					op1 = rs1_data;
-					op2 = rs2_data;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_REG;
+					imm = immI;	//doesn't matter
+					//op1 = rs1_data;
+					//op2 = rs2_data;
 					case(func3)
 						`FUN3_ADD_SUB : begin
 							case(inst[30])
@@ -258,16 +279,22 @@ always
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;
-					op1 = `ZERO_WORD;
-					op2 = immU;
+					alu_op1_src = `OP1_REG;	//doesn't matter
+					alu_op2_src = `OP2_REG;
+					imm = immU;
+					//op1 = `ZERO_WORD;
+					//op2 = immU;
 					alu_op = `ALU_LUI;
 				end
 				`BRANCH: begin
 					rs1_r_ena = `REG_RENABLE;
 					rs2_r_ena = `REG_RENABLE;
 					rd_w_ena = `REG_WDISABLE;
-					op1 = rs1_data;
-					op2 = rs2_data;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_REG;
+					imm = immB;
+//					op1 = rs1_data;
+//					op2 = rs2_data;
 					case(func3)
 						`FUN3_BEQ: begin alu_op = `ALU_BEQ; end	
 						`FUN3_BNE: begin alu_op = `ALU_BNE; end	
@@ -282,48 +309,67 @@ always
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;		//pc + 4
-					op1 = pc;
-					op2 = 4;
+					alu_op1_src = `OP1_PC;
+					alu_op2_src = `OP2_4;
+					imm = immJ;
+					//op1 = pc;
+					//op2 = 4;
 					alu_op = `ALU_ADD;		
 				end
 				`JALR: begin
 					rs1_r_ena = `REG_RENABLE;		//rs + imm
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;		//pc + 4
-					op1 = pc;
-					op2 = 4;
+					alu_op1_src = `OP1_PC;
+					alu_op2_src = `OP2_4;
+					imm = immI;
+					//op1 = pc;
+
+					//op2 = 4;
 					alu_op = `ALU_ADD;		
 				end
 				`AUIPC: begin
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;		//pc + immU
-					op1 = pc;
-					op2 = immU;
+					alu_op1_src = `OP1_PC;
+					alu_op2_src = `OP2_IMM;
+					imm = immU;
+					//op1 = pc;
+					//op2 = immU;
 					alu_op = `ALU_ADD;		
 				end
 				`LOAD: begin
 					rs1_r_ena = `REG_RENABLE;		//rs + imm ->address
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;		
-					op1 = rs1_data;
-					op2 = immI;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_IMM;
+					//op1 = rs1_data;
+					//op2 = immI;
+					imm = immI;
 					alu_op = `ALU_ADD;		
 				end
 				`STORE: begin
 					rs1_r_ena = `REG_RENABLE;		//rs + imm
 					rs2_r_ena = `REG_RENABLE;
 					rd_w_ena = `REG_WDISABLE;		
-					op1 = rs1_data;
-					op2 = immS;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_IMM;
+					imm = immS;
+					//op1 = rs1_data;
+					//op2 = immS;
 					alu_op = `ALU_ADD;		
 				end
 				default : begin
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WDISABLE;
-					op1 = `ZERO_WORD;
-					op2 = `ZERO_WORD;
+					alu_op1_src = `OP1_REG;
+					alu_op2_src = `OP2_REG;
+					imm = `ZERO_WORD;
+					//op1 = `ZERO_WORD;
+					//op2 = `ZERO_WORD;
 					alu_op = `ALU_ZERO;
 				end
 				

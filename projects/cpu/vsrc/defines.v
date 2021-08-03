@@ -4,6 +4,7 @@
 `define PC_START   64'h00000000_80000000  
 `define ZERO_WORD  64'h00000000_00000000   
 `define REG_BUS    63 : 0     
+`define INST_BUS    31 : 0     
 //`define INST_ADD   8'h11
 
 /* ----id stage---- */
@@ -14,6 +15,10 @@
 10  MADD   MSUB    NMSUB   NMADD	OP-FP	res
 11 BRANCH  JALR		res		JAL		SYS		res
 */
+//stall
+`define STALL_NEXT  2'b00
+`define STALL_KEEP	2'b01
+`define STALL_ZERO	2'b10
 //opcode
 `define OP_IMM 7'b0010011
 `define OP_IMM32 7'b0011011
@@ -72,6 +77,22 @@
 `define REG_RDISABLE 1'b0
 `define REG_WENABLE 1'b1
 `define REG_WDISABLE 1'b0
+
+`define OP1_REG 1'b0
+`define OP1_PC 1'b1
+`define OP2_REG 2'b00
+`define OP2_IMM 2'b01
+`define OP2_4  2'b10
+
+`define RS1_EX 2'b00
+`define RS1_ME 2'b01
+`define RS1_WB 2'b10
+`define RS2_EX 2'b00
+`define RS2_ME 2'b01
+`define RS2_WB 2'b10
+
+`define NEXTPC_PC 1'b0
+`define NEXTPC_REG 1'b1
 
 /* ----exe stage---- */
 `define ALU_OP_BUS 4:0
