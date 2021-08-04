@@ -124,7 +124,7 @@ wire [`REG_BUS] pc_op1;
 wire [`REG_BUS] target_pc_tmp;
 assign pc_op1 = (pc_src == 1'b1) ? new_rs1_data : pc;
 assign target_pc = {target_pc_tmp[63:1], pc_src == 1 ? 1'b0 : target_pc_tmp[0]};		//JALR make the least significant bit zero
-adder64 Pcadder(.op1(op1), .op2(imm), .cin(0), .result(target_pc_tmp), .zero(), .sign(), .overflow(), .carry(), .cout());
+adder64 Pcadder(.op1(pc_op1), .op2(imm), .cin(0), .result(target_pc_tmp), .zero(), .sign(), .overflow(), .carry(), .cout());
 
 
 endmodule
