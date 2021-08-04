@@ -88,6 +88,7 @@ always
 					ex_branch <= id_branch;
 					ex_jump <= id_jump;
 					ex_pc_src <= id_pc_src;
+					ex_mem_rena <= id_mem_rena;
 				 	ex_mem_wena <= id_mem_wena;
 					ex_mem_ext_un <= id_mem_ext_un;
 					ex_mem_to_reg <= id_mem_to_reg;
