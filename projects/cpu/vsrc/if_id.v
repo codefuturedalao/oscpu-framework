@@ -3,10 +3,10 @@
 module if_id(
 	input wire clk,
 	input wire rst,
+	input wire [1 : 0] stall,
 	
 	input wire [`INST_BUS] if_inst,
 	input wire [`REG_BUS] if_pc,
-	input wire [1 : 0] stall,
 
 	output reg [`INST_BUS] id_inst,
 	output reg [`REG_BUS] id_pc

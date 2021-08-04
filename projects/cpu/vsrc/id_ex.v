@@ -54,6 +54,8 @@ always
 			ex_pc <= `ZERO_WORD;
 			ex_rs1_data <= `ZERO_WORD;
 			ex_rs2_data <= `ZERO_WORD;
+			ex_rs1_addr <= 5'b00000;
+			ex_rs2_addr <= 5'b00000;
 			ex_alu_op1_src <= 1'b0;
 			ex_alu_op2_src <= 2'b00;
 			ex_imm <= `ZERO_WORD;
@@ -76,6 +78,8 @@ always
 					ex_pc <= id_pc;
 					ex_rs1_data <= id_rs1_data;
 					ex_rs2_data <= id_rs2_data;
+					ex_rs1_addr <= id_rs1_addr;
+					ex_rs2_addr <= id_rs2_addr;
 					ex_alu_op1_src <= id_alu_op1_src;
 					ex_alu_op2_src <= id_alu_op2_src;
 					ex_imm <= id_imm;
@@ -97,6 +101,8 @@ always
 					ex_pc <= `ZERO_WORD;
 					ex_rs1_data <= `ZERO_WORD;
 					ex_rs2_data <= `ZERO_WORD;
+					ex_rs1_addr <= 5'b00000;
+					ex_rs2_addr <= 5'b00000;
 					ex_alu_op1_src <= 1'b0;
 					ex_alu_op2_src <= 2'b00;
 					ex_imm <= `ZERO_WORD;
@@ -117,6 +123,8 @@ always
 					ex_pc <= `ZERO_WORD;
 					ex_rs1_data <= `ZERO_WORD;
 					ex_rs2_data <= `ZERO_WORD;
+					ex_rs1_addr <= 5'b00000;
+					ex_rs2_addr <= 5'b00000;
 					ex_alu_op1_src <= 1'b0;
 					ex_alu_op2_src <= 2'b00;
 					ex_imm <= `ZERO_WORD;
