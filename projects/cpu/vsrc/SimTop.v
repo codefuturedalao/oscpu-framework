@@ -398,7 +398,7 @@ wire [7 : 0] wb_mem_byte_enable;
 wire [`REG_BUS] wb_pc;
 wire [`INST_BUS] wb_inst;
 
-me_wb Ex_wb(
+me_wb Me_wb(
 	.clk(clk),
 	.rst(rst),
 	.stall(me_wb_stall),
