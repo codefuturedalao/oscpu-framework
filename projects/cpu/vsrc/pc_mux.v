@@ -4,7 +4,7 @@ module pc_mux(
 	input wire branch,
 	input wire jump,
 	input wire b_flag,
-	input wire target_pc,
+	input wire [`REG_BUS] target_pc,
 
 	output wire transfer,
 	output reg[`REG_BUS] new_pc
