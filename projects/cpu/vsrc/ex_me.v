@@ -44,7 +44,7 @@ module ex_me(
 
 always
 	@(posedge clk) begin
-		if(clk == 1'b1) begin
+		if(rst == 1'b1) begin
 			me_target_pc <= `ZERO_WORD;
 			me_branch <= 1'b0;
 			me_jump <= 1'b0;
