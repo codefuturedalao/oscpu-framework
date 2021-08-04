@@ -141,6 +141,7 @@ always
 					rd_w_ena = `REG_WENABLE;
 					alu_op1_src = `OP1_REG;
 					alu_op2_src = `OP2_IMM;
+					imm = immI;
 					//op1 = rs1_data;
 					//op2 = immI;
 					case(func3)

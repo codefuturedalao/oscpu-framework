@@ -48,7 +48,7 @@ always
 	@(*) begin
 		case( alu_op ) 
 	  		`ALU_SUB, `ALU_SUBW, `ALU_SLT, `ALU_SLTU,`ALU_BEQ, `ALU_BNE, `ALU_BLT, `ALU_BGE, `ALU_BLTU, `ALU_BGEU: begin
-				op1_add = op1;
+			     op1_add = op1;
 				 op2_add = ~op2; 
 			     cin = 1'b1;
 			end
