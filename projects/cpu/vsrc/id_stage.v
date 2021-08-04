@@ -281,7 +281,7 @@ always
 					rs2_r_ena = `REG_RDISABLE;
 					rd_w_ena = `REG_WENABLE;
 					alu_op1_src = `OP1_REG;	//doesn't matter
-					alu_op2_src = `OP2_REG;
+					alu_op2_src = `OP2_IMM;
 					imm = immU;
 					//op1 = `ZERO_WORD;
 					//op2 = immU;
