@@ -3,7 +3,7 @@
 module ex_me(
 	input wire clk,
 	input wire rst,
-	input wire stall,
+	input wire [1 : 0] stall,
 	/* for branch and jump */	
 	input wire [`REG_BUS] ex_target_pc,
 	input wire ex_branch,
