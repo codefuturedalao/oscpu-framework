@@ -3,7 +3,7 @@
 module id_ex(
 	input wire clk,
 	input wire rst,
-	input wire stall,
+	input wire [1 : 0] stall,
 	
 	input wire [`REG_BUS] id_pc,
 	input wire [`INST_BUS] id_inst,		//for difftest
