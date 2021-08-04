@@ -1,6 +1,5 @@
 
 `include "defines.v"
-
 module regfile(
     input  wire clk,
 	input  wire rst,
@@ -71,7 +70,7 @@ module regfile(
 		if (rst == 1'b1)
 			r_data1 = `ZERO_WORD;
 		else if (r_ena1 == `REG_RENABLE) begin
-			if(r_addr1 == w_addr) begin
+			if(r_addr1 == w_addr && w_ena == `REG_WENABLE) begin
 				r_data1 = w_data;
 			end
 			else begin
@@ -86,7 +85,7 @@ module regfile(
 		if (rst == 1'b1)
 			r_data2 = `ZERO_WORD;
 		else if (r_ena2 == `REG_RENABLE) begin
-			if(r_addr2 == w_addr) begin
+			if(r_addr2 == w_addr && w_ena == `REG_WENABLE) begin
 				r_data2 = w_data;
 			end
 			else begin
