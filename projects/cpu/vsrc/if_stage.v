@@ -16,7 +16,7 @@ reg [`REG_BUS]pc;
 // fetch an instruction
 always
 	@(posedge clk) begin
-  		if( rst == 1'b1 ) begin
+  		if(rst == 1'b1) begin
     		pc <= `PC_START;
   		end
  		else begin

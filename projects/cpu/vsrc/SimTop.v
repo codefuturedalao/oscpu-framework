@@ -450,7 +450,7 @@ always @(posedge clock) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, vaild, cycleCnt, instrCnt} <= 0;
   end
   else begin
-    cmt_wen <= wb_rd_wena;			
+    cmt_wen <= wb_rd_wena;	
     cmt_wdest <= {3'd0, wb_rd_waddr};
     cmt_wdata <= wb_rd_data;
     cmt_pc <= wb_pc;		//TODO:
@@ -522,7 +522,7 @@ DifftestArchIntRegState DifftestArchIntRegState (
 DifftestTrapEvent DifftestTrapEvent(
   .clock              (clock),
   .coreid             (0),
-  .valid              (wb_inst[6:0] == 7'h6b),	//TODO:
+  .valid              (wb_inst[6:0] == 7'h6b),	
   .code               (regs[10][7:0]),
   .pc                 (cmt_pc),
   .cycleCnt           (cycleCnt),
