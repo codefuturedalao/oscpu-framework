@@ -92,8 +92,10 @@ wire system_opcode = opcode[6] & opcode[5] & opcode[4] & ~opcode[3] & ! ~opcode[
 wire csr_uimm = rs1_r_addr;
 assign csr_op = {2{system_opcode}} & inst[13 : 12];
 
-assign csr_rena = (csr_op == `CSR_RW) ? |rd_w_addr : 1'b1;
-assign csr_wena = (csr_op == `CSR_RW) ? 1'b1 : |csr_uimm;	//csr_uimm is the same as rs1_r_addr, so no need to test inst[14]
+//assign csr_rena = (csr_op == `CSR_RW) ? |rd_w_addr : 1'b1;
+assign csr_rena = (csr_op[1] & ~csr_op[0]) | (csr_op[1] & csr_op[1]) | (~csr_op[1] & csr_op[0] & (|rd_w_addr));
+//assign csr_wena = (csr_op == `CSR_RW) ? 1'b1 : |csr_uimm;	//csr_uimm is the same as rs1_r_addr, so no need to test inst[14]
+assign csr_wena = (csr_op[1] & ~csr_op[0] & (|csr_uimm)) | (csr_op[1] & csr_op[1] & (|csr_uimm)) | (~csr_op[1] & csr_op[0]);
 
 
 /* memory signal */
