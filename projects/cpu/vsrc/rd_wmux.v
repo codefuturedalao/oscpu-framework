@@ -3,9 +3,11 @@
 module rd_wmux(
 	input wire [`REG_BUS] alu_result,
 	input wire [`REG_BUS] mem_data,
+	input wire [`REG_BUS] csr_data,
 	input wire mem_to_reg,
 	input wire mem_ext_un,
 	input wire [7 : 0] byte_enable,
+	input wire csr_rena,
 	
 	output reg [`REG_BUS] rd_wdata
 );
@@ -29,7 +31,10 @@ module rd_wmux(
 	//load or other
 	always
 		@(*) begin
-			if(mem_to_reg == 1'b1) begin		//load
+			if(csr_rena == 1'b1) begin
+				rd_wdata = csr_data;
+			end
+			else if(mem_to_reg == 1'b1) begin		//load
 					case(byte_enable) 
 						8'b0000_0001:	begin
 							if(mem_ext_un == 1'b1) begin

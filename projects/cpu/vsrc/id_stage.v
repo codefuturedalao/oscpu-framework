@@ -33,7 +33,11 @@ module id_stage(
 	output reg [7 : 0] byte_enable,
 	/* wb stage signal */
 	output wire mem_ext_un,			
-	output wire mem_to_reg
+	output wire mem_to_reg,
+	output wire csr_rena,
+	output wire csr_wena,
+	output wire [1 : 0] csr_op
+	//output wire [4 : 0] csr_uimm,
 );
 
 
@@ -49,6 +53,7 @@ wire [`REG_BUS] immS = {{52{inst[31]}}, inst[31 : 25], inst[11 : 7]};
 wire [`REG_BUS] immB = {{52{inst[31]}}, inst[7] ,inst[30 : 25], inst[11 : 8], 1'b0};
 wire [`REG_BUS] immU = {{32{inst[31]}}, inst[31 : 12], 12'b0};
 wire [`REG_BUS] immJ = {{44{inst[31]}}, inst[19 : 12], inst[20], inst[30 : 21], 1'b0};
+//wire [`REG_BUS] imm_csr = {{52{inst[31]}}, inst[31 : 20]};
 
 /* use wire not always@(*) to generate combinational circuit for fun, no other reason..., may be bad for
    forward compatibility */
@@ -72,6 +77,7 @@ assign func3  = inst[14 : 12];
 assign func7  = inst[31 : 25];
 assign rs1    = inst[19 : 15];
 assign rs2    = inst[24 : 20];
+wire csr_addr = inst[31 : 20];
 
 assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
 assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
@@ -80,6 +86,14 @@ assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 //assign b_offset = immB;
 //assign j_offset = jump[0] == 1 ? immI : (jump[1] == 1 ? immJ : `ZERO_WORD);
 
+
+/* csr signal */
+wire system_opcode = opcode[6] & opcode[5] & opcode[4] & ~opcode[3] & ! ~opcode[2] & opcode[1] & opcode[0];
+wire csr_uimm = rs1_r_addr;
+assign csr_op = {2{system_opcode}} & inst[13 : 12];
+
+assign csr_rena = (csr_op == `CSR_RW) ? |rd_w_addr : 1'b1;
+assign csr_wena = (csr_op == `CSR_RW) ? 1'b1 : |csr_uimm;	//csr_uimm is the same as rs1_r_addr, so no need to test inst[14]
 
 
 /* memory signal */
@@ -358,9 +372,31 @@ always
 					alu_op1_src = `OP1_REG;
 					alu_op2_src = `OP2_IMM;
 					imm = immS;
-					//op1 = rs1_data;
-					//op2 = immS;
 					alu_op = `ALU_ADD;		
+				end
+				`SYSTEM: begin
+					if(inst[14] == 1'b1) begin
+						rs1_r_ena = `REG_RDISABLE;		
+					end
+					else begin
+						if(csr_op == `CSR_RW) begin
+							rs1_r_ena = 1'b1;
+						end
+						else begin
+							rs1_r_ena = |rs1_r_addr;
+						end
+					end
+					if(csr_op == `CSR_RW) begin
+						rd_w_ena = |rd_w_addr;
+					end
+					else begin
+						rd_w_ena = `REG_WENABLE;		
+					end
+					rs2_r_ena = `REG_RDISABLE;
+					alu_op1_src = `OP1_REG;	//doesn't matter
+					alu_op2_src = `OP2_IMM;
+					imm = immI;	//reuse imm bus
+					alu_op = `ALU_LUI;		//alu_result = imm
 				end
 				default : begin
 					rs1_r_ena = `REG_RDISABLE;
@@ -369,8 +405,6 @@ always
 					alu_op1_src = `OP1_REG;
 					alu_op2_src = `OP2_REG;
 					imm = `ZERO_WORD;
-					//op1 = `ZERO_WORD;
-					//op2 = `ZERO_WORD;
 					alu_op = `ALU_ZERO;
 				end
 				

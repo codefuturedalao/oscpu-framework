@@ -25,6 +25,9 @@ module id_ex(
 	input wire id_mem_to_reg,
 	input wire [7 : 0] id_mem_byte_enable, 
 	input wire [`ALU_OP_BUS] id_alu_op,
+	input wire id_csr_rena,
+	input wire id_csr_wena,
+	input wire [1 : 0] id_csr_op,
 
 	output reg [`REG_BUS] ex_pc,
 	output reg [`INST_BUS] ex_inst,
@@ -45,7 +48,10 @@ module id_ex(
 	output reg ex_mem_ext_un,
 	output reg ex_mem_to_reg,
 	output reg [7 : 0] ex_mem_byte_enable, 
-	output reg [`ALU_OP_BUS] ex_alu_op
+	output reg [`ALU_OP_BUS] ex_alu_op,
+	output reg ex_csr_rena,
+	output reg ex_csr_wena,
+	output reg [1 : 0] ex_csr_op
 );
 
 always
@@ -71,6 +77,9 @@ always
 			ex_mem_byte_enable <= 8'b0000_0000;
 			ex_alu_op <= `ALU_ZERO;
 			ex_inst <= 32'h0000_0000;
+			ex_csr_rena <= 1'b0;
+			ex_csr_wena <= 1'b0;
+			ex_csr_op <= 2'b00;
 		end	
 		else begin
 			case(stall)
@@ -95,6 +104,9 @@ always
 					ex_mem_byte_enable <= id_mem_byte_enable;
 					ex_alu_op <= id_alu_op;
 					ex_inst <= id_inst;
+					ex_csr_rena <= id_csr_rena;
+					ex_csr_wena <= id_csr_wena;
+					ex_csr_op <= id_csr_op;
 				end
 				`STALL_KEEP: begin
 				end
@@ -119,6 +131,9 @@ always
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
 					ex_inst <= 32'h0000_0000;
+					ex_csr_rena <= 1'b0;
+					ex_csr_wena <= 1'b0;
+					ex_csr_op <= 2'b00;
 				end
 				default: begin
 					ex_pc <= `ZERO_WORD;
@@ -141,6 +156,9 @@ always
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
 					ex_inst <= 32'h0000_0000;
+					ex_csr_rena <= 1'b0;
+					ex_csr_wena <= 1'b0;
+					ex_csr_op <= 2'b00;
 				end
 			endcase
 		end

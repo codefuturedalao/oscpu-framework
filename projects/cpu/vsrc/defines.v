@@ -31,6 +31,7 @@
 `define AUIPC 7'b0010111
 `define LOAD 7'b0000011
 `define STORE 7'b0100011
+`define SYSTEM 7'b1110011
 
 //func3
 `define FUN3_ADDI 3'b000
@@ -125,3 +126,9 @@
 /* ----mem stage---- */
 `define MEM_UNSIGNED 1'b0
 `define MEM_SIGNED 1'b1
+
+
+/* ----wb stage---- */
+`define CSR_RW 2'b01
+`define CSR_RS 2'b10
+`define CSR_RC 2'b11

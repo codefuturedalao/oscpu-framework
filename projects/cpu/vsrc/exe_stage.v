@@ -16,6 +16,7 @@ module exe_stage(
 	input wire [`REG_BUS] me_alu_result,
 	input wire [`REG_BUS] wb_rd_data,
   
+	output wire [`REG_BUS] new_rs1_data,
 	output wire [`REG_BUS] new_rs2_data,
   	output reg  [`REG_BUS] alu_result,
 	output wire [`REG_BUS] target_pc,
@@ -34,7 +35,7 @@ wire [`REG_BUS] result_add;
 
 wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
-wire [`REG_BUS]new_rs1_data;
+//wire [`REG_BUS]new_rs1_data;
 //wire [`REG_BUS]new_rs2_data;
 
 /* select new_rs1_data and new_rs2_data to solve data hazard */

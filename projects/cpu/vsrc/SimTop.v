@@ -83,6 +83,10 @@ wire [7 : 0] id_mem_byte_enable;
 // id_stage -> wb_stage
 wire id_rd_wena;
 wire [4 : 0] id_rd_waddr;
+wire id_csr_rena;
+wire id_csr_wena;
+wire [1 : 0] id_csr_op;
+//wire [4 : 0] csr_uimm;
 
 
 id_stage Id_stage(
@@ -107,7 +111,10 @@ id_stage Id_stage(
 	.mem_w_ena(id_mem_wena),
 	.byte_enable(id_mem_byte_enable),
 	.mem_ext_un(id_mem_ext_un),
-	.mem_to_reg(id_mem_to_reg)
+	.mem_to_reg(id_mem_to_reg),
+	.csr_rena(id_csr_rena),
+	.csr_wena(id_csr_wena),
+	.csr_op(id_csr_op)
 );
 
 // wb_stage -> regfile
@@ -140,11 +147,17 @@ regfile Regfile(
 
 wire ex_mem_rena;
 wire [4 : 0] ex_rd_waddr;
+wire [4 : 0] me_rd_waddr;
 wire transfer;
+wire ex_csr_rena;
+wire me_csr_rena;
 
 hazard_unit Hazard_unit(
 	.ex_mem_rena(ex_mem_rena),
 	.ex_rd_waddr(ex_rd_waddr),
+	.me_rd_waddr(me_rd_waddr),
+	.ex_csr_rena(ex_csr_rena),
+	.me_csr_rena(me_csr_rena),
 	.id_rs1_rena(id_rs1_rena),	
 	.id_rs1_addr(id_rs1_raddr),
 	.id_rs2_rena(id_rs2_rena),
@@ -178,6 +191,9 @@ wire ex_mem_ext_un;
 wire ex_mem_to_reg;
 wire [7 : 0] ex_mem_byte_enable; 
 wire [`ALU_OP_BUS] ex_alu_op;
+//wire ex_csr_rena;
+wire ex_csr_wena;
+wire [1 : 0] ex_csr_op;
 
 id_ex Id_ex(
 	.clk(clk),
@@ -204,6 +220,9 @@ id_ex Id_ex(
 	.id_mem_to_reg(id_mem_to_reg),
 	.id_mem_byte_enable(id_mem_byte_enable),
 	.id_alu_op(id_alu_op),
+	.id_csr_rena(id_csr_rena),
+	.id_csr_wena(id_csr_wena),
+	.id_csr_op(id_csr_op),
 
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
@@ -224,7 +243,10 @@ id_ex Id_ex(
 	.ex_mem_ext_un(ex_mem_ext_un),
 	.ex_mem_to_reg(ex_mem_to_reg),
 	.ex_mem_byte_enable(ex_mem_byte_enable),
-	.ex_alu_op(ex_alu_op)
+	.ex_alu_op(ex_alu_op),
+	.ex_csr_rena(ex_csr_rena),
+	.ex_csr_wena(ex_csr_wena),
+	.ex_csr_op(ex_csr_op)
 );
 
 /* exe stage */
@@ -233,13 +255,13 @@ wire [`REG_BUS] me_alu_result;
 
 // exe_stage -> mem stage
 wire ex_b_flag;
+wire [`REG_BUS] ex_new_rs1_data;	//for csr calculate
 wire [`REG_BUS] ex_new_rs2_data;	//for store 
 wire [`REG_BUS] ex_target_pc;	//for branch and jump
 wire [`REG_BUS] ex_alu_result;
 
 /* forward unit */
 wire me_rd_wena;
-wire [4 : 0] me_rd_waddr;
 //wire wb_rd_wena;
 //wire [4 : 0] wb_rd_waddr; 
 wire [1 : 0] rs1_src;
@@ -273,6 +295,7 @@ exe_stage Exe_stage(
 	.me_alu_result(me_alu_result),
 	.wb_rd_data(wb_rd_data),
 
+	.new_rs1_data(ex_new_rs1_data),
 	.new_rs2_data(ex_new_rs2_data),
 	.alu_result(ex_alu_result),
 	.target_pc(ex_target_pc),
@@ -291,9 +314,13 @@ wire me_mem_ext_un;
 wire me_mem_to_reg;
 wire [7 : 0] me_mem_byte_enable; 
 //wire [`REG_BUS] me_alu_result;
+wire [`REG_BUS] me_new_rs1_data;
 wire [`REG_BUS] me_new_rs2_data;
 wire [`REG_BUS] me_pc;
 wire [`INST_BUS] me_inst;
+//wire me_csr_rena;
+wire me_csr_wena;
+wire [1 : 0] me_csr_op;
 
 ex_me Ex_me(
 	.clk(clk),
@@ -310,11 +337,15 @@ ex_me Ex_me(
 	.ex_mem_to_reg(ex_mem_to_reg),
 	.ex_mem_byte_enable(ex_mem_byte_enable),
 	.ex_alu_result(ex_alu_result),
+	.ex_new_rs1_data(ex_new_rs1_data),
 	.ex_new_rs2_data(ex_new_rs2_data),
 	.ex_rd_wena(ex_rd_wena),
 	.ex_rd_waddr(ex_rd_waddr),
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
+	.ex_csr_rena(ex_csr_rena),
+	.ex_csr_wena(ex_csr_wena),
+	.ex_csr_op(ex_csr_op),
 	
 	.me_target_pc(me_target_pc),
 	.me_branch(me_branch),
@@ -326,11 +357,15 @@ ex_me Ex_me(
 	.me_mem_to_reg(me_mem_to_reg),
 	.me_mem_byte_enable(me_mem_byte_enable),
 	.me_alu_result(me_alu_result),
+	.me_new_rs1_data(me_new_rs1_data),
 	.me_new_rs2_data(me_new_rs2_data),
 	.me_rd_wena(me_rd_wena),
 	.me_rd_waddr(me_rd_waddr),
 	.me_pc(me_pc),
-	.me_inst(me_inst)
+	.me_inst(me_inst),
+	.me_csr_rena(me_csr_rena),
+	.me_csr_wena(me_csr_wena),
+	.me_csr_op(me_csr_op)	
 
 );
 
@@ -397,6 +432,10 @@ wire wb_mem_ext_un;
 wire [7 : 0] wb_mem_byte_enable;
 wire [`REG_BUS] wb_pc;
 wire [`INST_BUS] wb_inst;
+wire wb_csr_rena;
+wire wb_csr_wena;
+wire [1 : 0] wb_csr_op;
+wire [`REG_BUS] wb_new_rs1_data;
 
 me_wb Me_wb(
 	.clk(clk),
@@ -412,6 +451,10 @@ me_wb Me_wb(
 	.me_rd_waddr(me_rd_waddr),
 	.me_pc(me_pc),
 	.me_inst(me_inst),
+	.me_csr_rena(me_csr_rena),
+	.me_csr_wena(me_csr_wena),
+	.me_csr_op(me_csr_op),
+	.me_new_rs1_data(me_new_rs1_data),
 	
 	.wb_alu_result(wb_alu_result),
 	.wb_mem_data(wb_mem_data),
@@ -421,17 +464,39 @@ me_wb Me_wb(
 	.wb_rd_wena(wb_rd_wena),
 	.wb_rd_waddr(wb_rd_waddr),
 	.wb_pc(wb_pc),
-	.wb_inst(wb_inst)
+	.wb_inst(wb_inst),
+	.wb_csr_rena(wb_csr_rena),
+	.wb_csr_wena(wb_csr_wena),
+	.wb_csr_op(wb_csr_op),
+	.wb_new_rs1_data(wb_new_rs1_data)
 );
 
+/* wb stage */
+
+wire [63 : 0] csr_data;
 rd_wmux Rd_wmux(
 	.alu_result(wb_alu_result),
 	.mem_data(wb_mem_data),
+	.csr_data(csr_data),
 	.mem_to_reg(wb_mem_to_reg),
 	.mem_ext_un(wb_mem_ext_un),
 	.byte_enable(wb_mem_byte_enable),
+	.csr_rena(wb_csr_rena),
 	
 	.rd_wdata(wb_rd_data)
+);
+
+
+csr Csr(
+	.clk(clk),
+	.rst(rst),
+	.csr_addr(wb_alu_result[11 : 0]),
+	.csr_rena(wb_csr_rena),
+	.csr_wena(wb_csr_wena),
+	.csr_op(wb_csr_op),
+	.rs1_data(wb_new_rs1_data),
+
+	.csr_data(csr_data)
 );
 
 // Difftest
