@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	top = new Vrvcpu;
   	tfp = new VerilatedVcdC;
 
-  	top->trace(tfp, 99);
+  	top->trace(tfp, 999);
   	tfp->open("top.vcd");
 	
 	while( !Verilated::gotFinish() && main_time < sim_time )
