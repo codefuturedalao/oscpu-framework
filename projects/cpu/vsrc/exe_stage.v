@@ -63,7 +63,7 @@ always
 
 always @(*) begin
 	if(alu_op == `ALU_WRITE) begin
-	$display("%c", op1[7 : 0]);
+	$write("%c", op1[7 : 0]);
 	end
 end
 
