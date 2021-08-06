@@ -525,7 +525,7 @@ always @(posedge clock) begin
     // Because the result required to commit cannot be calculated in time before first InstrCommit during verilator simulation
     // Maybe you can avoid it in pipeline
     //skip <= (wb_pc == `PC_START) || (wb_pc == `ZERO_WORD);
-    skip <= (wb_pc == `PC_START| wb_pc == 64'h0000000080000bf8 | wb_pc == 64'h0000000080000bf0);
+    skip <= (wb_pc == `PC_START| wb_pc == 64'h0000000080000c1c | wb_pc == 64'h0000000080000c24);
     
     cycleCnt <= 1 + cycleCnt;
     instrCnt <= 1 + instrCnt;
