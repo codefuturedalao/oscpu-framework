@@ -61,8 +61,10 @@ always
 		endcase
 	end
 
-initial begin
+always @(*) begin
+	if(alu_op == `ALU_WRITE) begin
 	$display("[$write] data=%c", op1[7 : 0]);
+	end
 end
 
 /* calculate alu_result */
