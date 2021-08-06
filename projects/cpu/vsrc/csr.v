@@ -33,6 +33,9 @@ module csr(
 					end
 				endcase
 			end
+			else begin
+				cycle <= cycle + 1;
+			end
 		end
 
 	assign csr_data = {64{cycle_ren}} & cycle;
