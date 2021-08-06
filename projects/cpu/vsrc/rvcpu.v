@@ -401,7 +401,7 @@ wire [7 : 0] byte_en_new;
 // waddr is same as raddr
 assign mem_raddr = (me_alu_result - `PC_START) >> 3;
 assign mem_waddr = mem_raddr;
-wire [5 : 0] shift_bit = {me_alu_result[2:0] << 3, 3'b000};
+wire [5 : 0] shift_bit = {me_alu_result[2:0], 3'b000};
 assign mem_wdata = me_new_rs2_data << shift_bit;
 
 assign byte_en_new = me_mem_byte_enable << me_alu_result[2:0];
