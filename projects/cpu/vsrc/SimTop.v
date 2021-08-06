@@ -518,7 +518,7 @@ always @(posedge clock) begin
     cmt_wdata <= wb_rd_data;
     cmt_pc <= wb_pc;		//TODO:
     cmt_inst <= wb_inst;
-    vaild <= (wb_pc == `ZERO_WORD) ? 1'b0 : 1'b1;
+    vaild <= (wb_pc == `ZERO_WORD | wb_pc == 64'h0000000080000bf0) ? 1'b0 : 1'b1;
 
     // Skip comparison of the first instruction
     // Because the result required to commit cannot be calculated in time before first InstrCommit during verilator simulation
