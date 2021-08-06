@@ -44,7 +44,7 @@ module id_stage(
 wire [6  : 0]opcode;
 wire [4  : 0]rd;
 wire [2  : 0]func3;
-wire [2  : 0]func7;
+wire [6  : 0]func7;
 wire [4  : 0]rs1;
 wire [4  : 0]rs2;
 
@@ -77,7 +77,7 @@ assign func3  = inst[14 : 12];
 assign func7  = inst[31 : 25];
 assign rs1    = inst[19 : 15];
 assign rs2    = inst[24 : 20];
-wire csr_addr = inst[31 : 20];
+wire [11 : 0] csr_addr = inst[31 : 20];
 
 assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
 assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
@@ -89,7 +89,7 @@ assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
 /* csr signal */
 wire system_opcode = opcode[6] & opcode[5] & opcode[4] & ~opcode[3] & ! ~opcode[2] & opcode[1] & opcode[0];
-wire csr_uimm = rs1_r_addr;
+wire [4 : 0] csr_uimm = rs1_r_addr;
 assign csr_op = {2{system_opcode}} & inst[13 : 12];
 
 //assign csr_rena = (csr_op == `CSR_RW) ? |rd_w_addr : 1'b1;

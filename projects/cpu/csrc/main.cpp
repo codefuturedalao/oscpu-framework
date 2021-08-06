@@ -17,7 +17,7 @@ static const vluint64_t sim_time = 1000;
 // inst 0: 1 + zero = reg1 1+0=1
 // inst 1: 2 + zero = reg1 2+0=2
 // inst 2: 1 + reg1 = reg1 1+2=3
-int inst_rom[65536];
+long long int inst_rom[65536];
 
 void read_inst( char* filename)
 {
@@ -46,10 +46,10 @@ int main(int argc, char **argv)
   Verilated::traceEverOn(true);
 
 	top = new Vrvcpu;
-  tfp = new VerilatedVcdC;
+  	tfp = new VerilatedVcdC;
 
-  top->trace(tfp, 99);
-  tfp->open("top.vcd");
+  	top->trace(tfp, 99);
+  	tfp->open("top.vcd");
 	
 	while( !Verilated::gotFinish() && main_time < sim_time )
 	{
@@ -63,8 +63,19 @@ int main(int argc, char **argv)
 	  else
 	  {
 	    top->rst = 0;
-		if( main_time % 10 == 5 )
-		  top->inst = (top->inst_ena == 1) ? inst_rom[ (top->inst_addr) >> 2 ] : 0;
+		top->inst_rdata = (top->inst_ena == 1) ? inst_rom[top->inst_addr] : 0;
+	 	top->mem_rdata = (top->mem_rena == 1) ? inst_rom[top->mem_raddr] : 0;
+		if( main_time % 10 == 5 ) {
+			long long int mask = 0xff;
+			long long int sum = 0;
+			for(int i = 0; i < 8; i++) {
+				if((top->mem_wmask & mask) == mask) {
+					sum += top->mem_wdata & mask;
+				}
+				mask = mask << 8;
+			}
+			inst_rom[top->mem_waddr] = sum;
+		}
 	  }
 	  top->eval();
 	  tfp->dump(main_time);

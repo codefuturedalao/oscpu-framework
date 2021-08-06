@@ -18,8 +18,6 @@ module SimTop(
 );
 
 
-
-
 // hazard_unit
 wire [1 : 0] pc_stall;
 wire [1 : 0] if_id_stall;
