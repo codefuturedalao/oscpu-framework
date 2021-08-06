@@ -11,7 +11,7 @@ using namespace std;
 static Vrvcpu* top;
 static VerilatedVcdC* tfp;
 static vluint64_t main_time = 0;
-static const vluint64_t sim_time = 1000;
+static const vluint64_t sim_time = 3000;
 
 // inst.bin
 // inst 0: 1 + zero = reg1 1+0=1
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	top = new Vrvcpu;
   	tfp = new VerilatedVcdC;
 
-  	top->trace(tfp, 999);
+  	top->trace(tfp, 99);
   	tfp->open("top.vcd");
 	
 	while( !Verilated::gotFinish() && main_time < sim_time )
