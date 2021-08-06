@@ -61,6 +61,10 @@ always
 		endcase
 	end
 
+initial begin
+	$display("[$write] data=%c", op1[7 : 0]);
+end
+
 /* calculate alu_result */
 //caution: i am not sure >>> is arth shift due to some reason
 //answer: not work

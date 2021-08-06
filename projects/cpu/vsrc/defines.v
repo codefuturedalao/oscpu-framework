@@ -32,6 +32,8 @@
 `define LOAD 7'b0000011
 `define STORE 7'b0100011
 `define SYSTEM 7'b1110011
+`define CUS0 7'b0001011
+//0000000_00000_01010_000_00000_0001011 write() 0005000B
 
 //func3
 `define FUN3_ADDI 3'b000
@@ -122,6 +124,8 @@
 `define ALU_SLLW 5'b10100
 `define ALU_SRLW 5'b10101
 `define ALU_SRAW 5'b10110
+
+`define ALU_WRITE 5'b11111
 
 /* ----mem stage---- */
 `define MEM_UNSIGNED 1'b0

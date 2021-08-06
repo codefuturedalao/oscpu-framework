@@ -400,6 +400,28 @@ always
 					imm = immI;	//reuse imm bus
 					alu_op = `ALU_LUI;		//alu_result = imm
 				end
+				`CUS0: begin
+					case(func3)
+						3'b000: begin
+							rs1_r_ena = `REG_RENABLE;
+							rs2_r_ena = `REG_RDISABLE;
+							rd_w_ena = `REG_WDISABLE;
+							alu_op1_src = `OP1_REG;
+							alu_op2_src = `OP2_REG;
+							imm = `ZERO_WORD;
+							alu_op = `ALU_WRITE;
+						end
+						default: begin
+							rs1_r_ena = `REG_RDISABLE;
+							rs2_r_ena = `REG_RDISABLE;
+							rd_w_ena = `REG_WDISABLE;
+							alu_op1_src = `OP1_REG;
+							alu_op2_src = `OP2_REG;
+							imm = `ZERO_WORD;
+							alu_op = `ALU_ZERO;
+						end
+					endcase
+				end
 				default : begin
 					rs1_r_ena = `REG_RDISABLE;
 					rs2_r_ena = `REG_RDISABLE;
