@@ -88,7 +88,7 @@ assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
 
 /* csr signal */
-wire system_opcode = opcode[6] & opcode[5] & opcode[4] & ~opcode[3] & ! ~opcode[2] & opcode[1] & opcode[0];
+wire system_opcode = opcode[6] & opcode[5] & opcode[4] & ~opcode[3] & ~opcode[2] & opcode[1] & opcode[0];
 wire [4 : 0] csr_uimm = rs1_r_addr;
 assign csr_op = {2{system_opcode}} & inst[13 : 12];
 
