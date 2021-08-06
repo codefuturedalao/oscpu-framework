@@ -74,7 +74,9 @@ int main(int argc, char **argv)
 				}
 				mask = mask << 8;
 			}
-			inst_rom[top->mem_waddr] = sum;
+			if(top->mem_wena == 1) {
+				inst_rom[top->mem_waddr] = sum;
+			}
 		}
 	  }
 	  top->eval();
