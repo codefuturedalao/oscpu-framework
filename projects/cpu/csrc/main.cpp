@@ -11,7 +11,7 @@ using namespace std;
 static Vrvcpu* top;
 static VerilatedVcdC* tfp;
 static vluint64_t main_time = 0;
-static const vluint64_t sim_time = 8000;
+static const vluint64_t sim_time = 20000;
 
 // inst.bin
 // inst 0: 1 + zero = reg1 1+0=1
