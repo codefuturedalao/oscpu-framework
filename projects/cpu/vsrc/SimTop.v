@@ -516,7 +516,7 @@ always @(posedge clock) begin
     cmt_wen <= wb_rd_wena;	
     cmt_wdest <= {3'd0, wb_rd_waddr};
     cmt_wdata <= wb_rd_data;
-    cmt_pc <= wb_pc;		//TODO:
+    cmt_pc <= wb_pc;		
     cmt_inst <= wb_inst;
    // vaild <= (wb_pc == `ZERO_WORD | wb_pc == 64'h0000000080000bf0) ? 1'b0 : 1'b1;
     vaild <= (wb_pc == `ZERO_WORD) ? 1'b0 : 1'b1;
@@ -525,7 +525,8 @@ always @(posedge clock) begin
     // Because the result required to commit cannot be calculated in time before first InstrCommit during verilator simulation
     // Maybe you can avoid it in pipeline
     //skip <= (wb_pc == `PC_START) || (wb_pc == `ZERO_WORD);
-    skip <= (wb_pc == `PC_START| wb_pc == 64'h0000000080000c1c | wb_pc == 64'h0000000080000c24);
+    //skip <= (wb_pc == `PC_START| wb_pc == 64'h0000000080000c1c | wb_pc == 64'h0000000080000c24);
+    skip <= (wb_pc == `PC_START);
     
     cycleCnt <= 1 + cycleCnt;
     instrCnt <= 1 + instrCnt;
