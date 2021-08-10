@@ -35,8 +35,6 @@ wire [`REG_BUS] result_add;
 
 wire [`REG_BUS]op1;
 wire [`REG_BUS]op2;
-//wire [`REG_BUS]new_rs1_data;
-//wire [`REG_BUS]new_rs2_data;
 
 /* select new_rs1_data and new_rs2_data to solve data hazard */
 rs1_mux Rs1_mux(.ex_rs1_data(ex_rs1_data), .me_alu_result(me_alu_result), .wb_rd_data(wb_rd_data), .rs1_src(rs1_src), .new_rs1_data(new_rs1_data));
