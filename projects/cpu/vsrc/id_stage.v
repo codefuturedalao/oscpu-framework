@@ -159,7 +159,7 @@ assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
 assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
 assign rs1_r_ena = opcode_jalr | opcode_branch | opcode_imm | opcode_imm32 
-		| opcode_op | opcode_op32 | opcode_store 
+		| opcode_op | opcode_op32 | opcode_store | opcode_load
 		| inst_csrrw | ((inst_csrrc | inst_csrrs) & |rs1_r_addr);
 assign rs2_r_ena = opcode_branch | opcode_store | opcode_op | opcode_op32;
 assign rd_w_ena = opcode_lui | opcode_auipc | opcode_jal | opcode_jalr
