@@ -52,7 +52,7 @@ decoder5_32 Decoder5_32(.in(alu_op), .out({9'b0, alu_sraw, alu_srlw, alu_sllw, a
 
 /* add or sub */
 assign op1_add = op1;
-assign op2_add = (|{alu_sub | alu_subw | alu_slt | alu_sltu | alu_beq | alu_blt | alu_bge | alu_bltu | alu_bgeu} == 1'b1) ? ~op2 : op2;
+assign op2_add = ((alu_sub | alu_subw | alu_slt | alu_sltu | alu_beq | alu_blt | alu_bge | alu_bltu | alu_bgeu) == 1'b1) ? ~op2 : op2;
 assign cin = (&{alu_sub | alu_subw | alu_slt | alu_sltu | alu_beq | alu_blt | alu_bge | alu_bltu | alu_bgeu} == 1'b1) ? 1'b1: 1'b0;
 adder64 myadder(op1_add, op2_add, cin, result_add, overflow, sign, cout, carry, zero);
 				
