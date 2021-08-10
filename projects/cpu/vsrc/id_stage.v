@@ -199,7 +199,7 @@ wire alu_sllw = inst_sllw | inst_slliw;
 wire alu_srlw = inst_srlw | inst_srliw;
 wire alu_sraw = inst_sraw | inst_sraiw;
 
-encoder32_5 Encoder32_5(.in({1'b0, alu_add, alu_slt, alu_sltu, alu_xor, alu_or, alu_and, alu_sll, alu_srl, alu_sra, alu_sub, alu_lui, alu_beq, alu_bne, alu_blt, alu_bge, alu_bltu, alu_bgeu, alu_addw, alu_subw, alu_sllw, alu_srlw, alu_sraw, 9'b0000_0000_0}), .out(alu_op));
+encoder32_5 Encoder32_5(.in({9'b0, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
 
 /* csr signal */
 wire [4 : 0] csr_uimm = rs1_r_addr;
