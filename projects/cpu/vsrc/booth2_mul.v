@@ -76,10 +76,10 @@ assign add_op1 = (~rst & valid) ?
         : 67'b0;
 
 
-assign add_op2 = ({67{booth_code == 3'b001 | booth_code == 3'b010}} & {mul_op2[64], mul_op2[64], mul_op2})
-            |    ({67{booth_code == 3'b011}} & {mul_op2[64], mul_op2, 1'b0})
-            |    ({67{booth_code == 3'b100}} & {~mul_op2[64], ~mul_op2, 1'b1})
-            |    ({67{booth_code == 3'b101 | booth_code == 3'b110}} & {~mul_op2[64], ~mul_op2[64], mul_op2});
+assign add_op2 = ({67{booth_code == 3'b001 | booth_code == 3'b010}} & {mul_op1[64], mul_op1[64], mul_op1})
+            |    ({67{booth_code == 3'b011}} & {mul_op1[64], mul_op1, 1'b0})
+            |    ({67{booth_code == 3'b100}} & {~mul_op1[64], ~mul_op1, 1'b1})
+            |    ({67{booth_code == 3'b101 | booth_code == 3'b110}} & {~mul_op1[64], ~mul_op1[64], mul_op1});
 
 assign cin = booth_code[2] & ~(&booth_code);
 assign add_result = add_op1 + add_op2 + cin;
