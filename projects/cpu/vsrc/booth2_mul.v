@@ -60,7 +60,7 @@ reg shift_bit;
 reg [64 : 0] rs1_data_r;
 reg [64 : 0] rs2_data_r;
 wire [64 : 0] mul_op1 = (counter == 7'b000_0000) ? {rs1_sign & rs1_data[63], rs1_data} : {rs1_data_r};
-wire [64 : 0] mul_op2 = (counter == 7'b000_0000) ? {rs2_sign & rs1_data[63], rs2_data} : {rs2_data_r};
+wire [64 : 0] mul_op2 = (counter == 7'b000_0000) ? {rs2_sign & rs2_data[63], rs2_data} : {rs2_data_r};
 wire [2 : 0] booth_code;
 
 /* 67 bits adder */
