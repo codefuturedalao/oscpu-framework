@@ -90,7 +90,7 @@ assign alu_result = ({64{alu_add | alu_sub}} & result_add)
 				|	({64{alu_lui}}  & op2)
 				|	({64{alu_mul}}  & mul_result[63 : 0])
 				|	({64{alu_mulh}}  & mul_result[127 : 64])
-				|	({64{alu_mulh}}  & {{32{mul_result[31]}}, mul_result[31 : 0]});
+				|	({64{alu_mulw}}  & {{32{mul_result[31]}}, mul_result[31 : 0]});
 
 
 
