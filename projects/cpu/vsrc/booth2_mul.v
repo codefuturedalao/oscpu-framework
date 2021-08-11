@@ -92,7 +92,7 @@ wire shift_bit_next = (counter == 7'b0) ? mul_op2[1] : lo_r[1];
 
 /* output */
 assign ready = (counter == 7'd33);
-assign mul_result = {hi_r[62 : 0], lo_r};
+assign mul_result = {hi_r[61 : 0], lo_r, shift_bit};
 
 always @(posedge clk) begin
     if(rst == 1'b1) begin
