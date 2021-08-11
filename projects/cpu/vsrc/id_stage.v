@@ -124,14 +124,14 @@ wire inst_or = opcode_op & (func3 == `FUN3_OR) & ~(|func7);
 wire inst_and = opcode_op & (func3 == `FUN3_AND) & ~(|func7);
 
 wire inst_addiw = opcode_imm32 & (func3 == `FUN3_ADDI);
-wire inst_slliw = opcode_imm32 & (func3 == `FUN3_SL);
-wire inst_srliw = opcode_imm32 & (func3 == `FUN3_SR) & ~inst[30];
-wire inst_sraiw = opcode_imm32 & (func3 == `FUN3_SR) & inst[30];
-wire inst_addw = opcode_op32 & (func3 == `FUN3_ADD_SUB) & ~inst[30];
-wire inst_subw = opcode_op32 & (func3 == `FUN3_ADD_SUB) & inst[30];
-wire inst_sllw = opcode_op32 & (func3 == `FUN3_SL);
-wire inst_srlw = opcode_op32 & (func3 == `FUN3_SR) & ~inst[30];
-wire inst_sraw = opcode_op32 & (func3 == `FUN3_SR) & inst[30];
+wire inst_slliw = opcode_imm32 & (func3 == `FUN3_SL) & ~(|func7);
+wire inst_srliw = opcode_imm32 & (func3 == `FUN3_SR) & ~(|func7);
+wire inst_sraiw = opcode_imm32 & (func3 == `FUN3_SR) & (~inst[31] & inst[30] & ~inst[29] & ~inst[28] & ~inst[27] & ~inst[26] & ~inst[25]);
+wire inst_addw = opcode_op32 & (func3 == `FUN3_ADD_SUB) & ~(|func7);
+wire inst_subw = opcode_op32 & (func3 == `FUN3_ADD_SUB) &  (~inst[31] & inst[30] & ~inst[29] & ~inst[28] & ~inst[27] & ~inst[26] & ~inst[25]);
+wire inst_sllw = opcode_op32 & (func3 == `FUN3_SL) & ~(|func7);
+wire inst_srlw = opcode_op32 & (func3 == `FUN3_SR) & ~(|func7);
+wire inst_sraw = opcode_op32 & (func3 == `FUN3_SR) & (~inst[31] & inst[30] & ~inst[29] & ~inst[28] & ~inst[27] & ~inst[26] & ~inst[25]);
 
 //csr instructions
 wire inst_csrrw = opcode_system & (func3 == `FUN3_CSRRW);
