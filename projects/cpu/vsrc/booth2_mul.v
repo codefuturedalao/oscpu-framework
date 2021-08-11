@@ -56,9 +56,11 @@ reg [6 : 0] counter;
 reg [64 : 0] hi_r;
 reg [64 : 0] lo_r;
 reg shift_bit;
-
-wire [64 : 0] mul_op1 = {rs1_sign, rs1_data};
-wire [64 : 0] mul_op2 = {rs2_sign, rs2_data};
+//use reg instead of wire becaouse rs1_data change during 32 cycles
+reg [64 : 0] rs1_data_r;
+reg [64 : 0] rs2_data_r;
+wire [64 : 0] mul_op1 = (counter == 7'b000_0000) ? {rs1_sign, rs1_data} : {rs1_data_r};
+wire [64 : 0] mul_op2 = (counter == 7'b000_0000) ? {rs2_sign, rs2_data} : {rs2_data_r};
 wire [2 : 0] booth_code;
 
 /* 67 bits adder */
@@ -68,7 +70,7 @@ wire [66 : 0] add_result;       //for simplity, use + in Mul module instead of A
 wire cin;
 
 assign booth_code = (~rst & valid) ? 
-        ((counter == 7'b0) ? {mul_op2[1 : 0], 1'b0} : 
+        ((counter == 7'b0) ? {rs2_data[1 : 0], 1'b0} : 
         ((counter == 7'd32) ? {rs2_sign, lo_r[0], shift_bit} : {lo_r[1 : 0], shift_bit} )) 
         : 3'b000;
 assign add_op1 = (~rst & valid) ? 
@@ -103,6 +105,10 @@ always @(posedge clk) begin
     end 
     else begin
         if(valid) begin     //valid need keep 33 cycle
+            if(counter == 7'b000_0000) begin
+                rs1_data_r <= {rs1_sign, rs1_data};
+                rs2_data_r <= {rs2_sign, rs2_data};
+            end
             if(counter == 7'd33) begin
                 counter <= 7'b000_0000;
                 hi_r <= 65'b0;
