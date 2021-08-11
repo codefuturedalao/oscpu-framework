@@ -92,6 +92,8 @@
 `define FUN3_DIVU 3'b101
 `define FUN3_REM 3'b110
 `define FUN3_REMU 3'b111
+//func7
+`define FUN7_M 7'b000_0001
 
 `define REG_RENABLE 1'b1
 `define REG_RDISABLE 1'b0

@@ -112,16 +112,16 @@ wire inst_slli = opcode_imm & (func3 == `FUN3_SL);
 wire inst_srli = opcode_imm & (func3 == `FUN3_SR) & ~inst[30];
 wire inst_srai = opcode_imm & (func3 == `FUN3_SR) & inst[30];
 
-wire inst_add = opcode_op & (func3 == `FUN3_ADD_SUB) & ~inst[30];
-wire inst_sub = opcode_op & (func3 == `FUN3_ADD_SUB) & inst[30];
-wire inst_sll = opcode_op & (func3 == `FUN3_SL);
-wire inst_slt = opcode_op & (func3 == `FUN3_SLT);
-wire inst_sltu = opcode_op & (func3 == `FUN3_SLTU);
-wire inst_xor = opcode_op & (func3 == `FUN3_XOR);
-wire inst_srl = opcode_op & (func3 == `FUN3_SR) & ~inst[30];
-wire inst_sra = opcode_op & (func3 == `FUN3_SR) & inst[30];
-wire inst_or = opcode_op & (func3 == `FUN3_OR);
-wire inst_and = opcode_op & (func3 == `FUN3_AND);
+wire inst_add = opcode_op & (func3 == `FUN3_ADD_SUB) & ~(|func7);
+wire inst_sub = opcode_op & (func3 == `FUN3_ADD_SUB) & (~inst[31] & inst[30] & ~inst[29] & ~inst[28] & ~inst[27] & ~inst[26] & ~inst[25]);
+wire inst_sll = opcode_op & (func3 == `FUN3_SL) & ~(|func7);
+wire inst_slt = opcode_op & (func3 == `FUN3_SLT) & ~(|func7);
+wire inst_sltu = opcode_op & (func3 == `FUN3_SLTU) & ~(|func7);
+wire inst_xor = opcode_op & (func3 == `FUN3_XOR) & ~(|func7);
+wire inst_srl = opcode_op & (func3 == `FUN3_SR) & ~(|func7);
+wire inst_sra = opcode_op & (func3 == `FUN3_SR) & (~inst[31] & inst[30] & ~inst[29] & ~inst[28] & ~inst[27] & ~inst[26] & ~inst[25]);
+wire inst_or = opcode_op & (func3 == `FUN3_OR) & ~(|func7);
+wire inst_and = opcode_op & (func3 == `FUN3_AND) & ~(|func7);
 
 wire inst_addiw = opcode_imm32 & (func3 == `FUN3_ADDI);
 wire inst_slliw = opcode_imm32 & (func3 == `FUN3_SL);
@@ -142,11 +142,11 @@ wire inst_csrrsi = opcode_system & (func3 == `FUN3_CSRRSI);
 wire inst_csrrci = opcode_system & (func3 == `FUN3_CSRRCI);
 
 // M extension
-wire inst_mul = opcode_op & (func3 == `FUN3_MUL) & inst[25];
-wire inst_mulh = opcode_op & (func3 == `FUN3_MULH) & inst[25];
-wire inst_mulhsu = opcode_op & (func3 == `FUN3_MULHSU) & inst[25];
-wire inst_mulhu = opcode_op & (func3 == `FUN3_MULHU) & inst[25];
-wire inst_mulw = opcode_op32 & (func3 == `FUN3_MUL) & inst[25];
+wire inst_mul = opcode_op & (func3 == `FUN3_MUL) & (func7 == `FUN7_M);
+wire inst_mulh = opcode_op & (func3 == `FUN3_MULH) & (func7 == `FUN7_M);
+wire inst_mulhsu = opcode_op & (func3 == `FUN3_MULHSU) & (func7 == `FUN7_M);
+wire inst_mulhu = opcode_op & (func3 == `FUN3_MULHU) & (func7 == `FUN7_M);
+wire inst_mulw = opcode_op32 & (func3 == `FUN3_MUL) & (func7 == `FUN7_M);
 
 /* control signal */
 assign rs1_sign = inst_mulh | inst_mulhsu;
