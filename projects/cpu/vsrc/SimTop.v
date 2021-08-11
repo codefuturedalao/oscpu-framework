@@ -25,6 +25,7 @@ wire [1 : 0] id_ex_stall;
 wire [1 : 0] ex_me_stall;
 wire [1 : 0] me_wb_stall;
 
+
 /* if stage */
 wire clk = clock;
 wire rst = reset;
@@ -72,6 +73,8 @@ wire [1 : 0] id_alu_op2_src;
 wire id_branch;
 wire id_jump;
 wire id_pc_src;
+wire id_rs1_sign;
+wire id_rs2_sign;
 // id_stage -> mem_stage
 wire id_mem_rena;
 wire id_mem_wena;
@@ -102,6 +105,8 @@ id_stage Id_stage(
 	.imm(id_imm),
 	.alu_op1_src(id_alu_op1_src),
 	.alu_op2_src(id_alu_op2_src),
+	.rs1_sign(id_rs1_sign),
+	.rs2_sign(id_rs2_sign),
 	.branch(id_branch),
 	.jump(id_jump),
 	.pc_src(id_pc_src),
@@ -149,6 +154,7 @@ wire [4 : 0] me_rd_waddr;
 wire transfer;
 wire ex_csr_rena;
 wire me_csr_rena;
+wire exe_stall_req;
 
 hazard_unit Hazard_unit(
 	.ex_mem_rena(ex_mem_rena),
@@ -161,6 +167,7 @@ hazard_unit Hazard_unit(
 	.id_rs2_rena(id_rs2_rena),
 	.id_rs2_addr(id_rs2_raddr),
 	.transfer(transfer),
+	.exe_stall_req(exe_stall_req),
 	
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
@@ -192,6 +199,8 @@ wire [`ALU_OP_BUS] ex_alu_op;
 //wire ex_csr_rena;
 wire ex_csr_wena;
 wire [1 : 0] ex_csr_op;
+wire ex_rs1_sign;
+wire ex_rs2_sign;
 
 id_ex Id_ex(
 	.clk(clk),
@@ -221,6 +230,8 @@ id_ex Id_ex(
 	.id_csr_rena(id_csr_rena),
 	.id_csr_wena(id_csr_wena),
 	.id_csr_op(id_csr_op),
+	.id_rs1_sign(id_rs1_sign),
+	.id_rs2_sign(id_rs2_sign),
 
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
@@ -244,7 +255,9 @@ id_ex Id_ex(
 	.ex_alu_op(ex_alu_op),
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
-	.ex_csr_op(ex_csr_op)
+	.ex_csr_op(ex_csr_op),
+	.ex_rs1_sign(ex_rs1_sign),
+	.ex_rs2_sign(ex_rs2_sign)
 );
 
 /* exe stage */
@@ -260,8 +273,6 @@ wire [`REG_BUS] ex_alu_result;
 
 /* forward unit */
 wire me_rd_wena;
-//wire wb_rd_wena;
-//wire [4 : 0] wb_rd_waddr; 
 wire [1 : 0] rs1_src;
 wire [1 : 0] rs2_src;
 
@@ -276,6 +287,10 @@ forward_unit Forward_unit(
 	.rs1_src(rs1_src),
 	.rs2_src(rs2_src)
 );
+
+wire mul_ready;
+wire mul_valid;
+wire [127 : 0] mul_result;
 
 exe_stage Exe_stage(
 	.rst(rst),
@@ -292,12 +307,31 @@ exe_stage Exe_stage(
 	.ex_rs2_data(ex_rs2_data),
 	.me_alu_result(me_alu_result),
 	.wb_rd_data(wb_rd_data),
+	
 
+	.mul_result(mul_result),
+	.mul_ready(mul_ready),
+	.mul_valid(mul_valid),
+
+	.stall_req(exe_stall_req),
 	.new_rs1_data(ex_new_rs1_data),
 	.new_rs2_data(ex_new_rs2_data),
 	.alu_result(ex_alu_result),
 	.target_pc(ex_target_pc),
 	.b_flag(ex_b_flag)
+);
+
+booth2_mul Booth2_mul(
+	.clk(clk),
+	.rst(rst),
+	.valid(mul_valid),
+	.rs1_sign(ex_rs1_sign),
+	.rs2_sign(ex_rs2_sign),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+
+	.ready(mul_ready),
+	.mul_result(mul_result)
 );
 	
 /* ex_me flip flop */

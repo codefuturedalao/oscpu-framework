@@ -6,18 +6,20 @@ module id_stage(
   	input wire rst,
   	input wire [31 : 0]inst,
   		
-  	output reg rs1_r_ena,
+  	output wire rs1_r_ena,
   	output wire [4 : 0]rs1_r_addr,
-  	output reg rs2_r_ena,
+  	output wire rs2_r_ena,
   	output wire [4 : 0]rs2_r_addr,
-  	output reg rd_w_ena,
+  	output wire rd_w_ena,
   	output wire [4 : 0]rd_w_addr,
   
 	/* exe stage signal */
-  	output reg [`ALU_OP_BUS] alu_op,
-	output reg [`REG_BUS] imm,
-	output reg alu_op1_src,
-	output reg [1 : 0] alu_op2_src,
+  	output wire [`ALU_OP_BUS] alu_op,
+	output wire [`REG_BUS] imm,
+	output wire alu_op1_src,
+	output wire [1 : 0] alu_op2_src,
+	output wire rs1_sign,			//only for mul
+	output wire rs2_sign,			//only for mul
 	/* branch and jump signal */
 	output wire branch,
 	output wire jump,
@@ -26,7 +28,7 @@ module id_stage(
 	/* mem stage signal */
 	output wire mem_r_ena,
 	output wire mem_w_ena,
-	output reg [7 : 0] byte_enable,
+	output wire [7 : 0] byte_enable,
 	/* wb stage signal */
 	output wire mem_ext_un,			
 	output wire mem_to_reg,
@@ -131,6 +133,7 @@ wire inst_sllw = opcode_op32 & (func3 == `FUN3_SL);
 wire inst_srlw = opcode_op32 & (func3 == `FUN3_SR) & ~inst[30];
 wire inst_sraw = opcode_op32 & (func3 == `FUN3_SR) & inst[30];
 
+//csr instructions
 wire inst_csrrw = opcode_system & (func3 == `FUN3_CSRRW);
 wire inst_csrrs = opcode_system & (func3 == `FUN3_CSRRS);
 wire inst_csrrc = opcode_system & (func3 == `FUN3_CSRRC);
@@ -138,8 +141,16 @@ wire inst_csrrwi = opcode_system & (func3 == `FUN3_CSRRWI);
 wire inst_csrrsi = opcode_system & (func3 == `FUN3_CSRRSI);
 wire inst_csrrci = opcode_system & (func3 == `FUN3_CSRRCI);
 
+// M extension
+wire inst_mul = opcode_op & (func3 == `FUN3_MUL) & inst[25];
+wire inst_mulh = opcode_op & (func3 == `FUN3_MULH) & inst[25];
+wire inst_mulhsu = opcode_op & (func3 == `FUN3_MULHSU) & inst[25];
+wire inst_mulhu = opcode_op & (func3 == `FUN3_MULHU) & inst[25];
+wire inst_mulw = opcode_op32 & (func3 == `FUN3_MUL) & inst[25];
 
 /* control signal */
+assign rs1_sign = inst_mulh | inst_mulhsu;
+assign rs2_sign = inst_mulh;
 assign branch = opcode_branch;
 assign jump = opcode_jal | opcode_jalr;
 assign pc_src = opcode_jalr;		//1: from reg; 0: from pc
@@ -199,8 +210,11 @@ wire alu_subw = inst_subw;
 wire alu_sllw = inst_sllw | inst_slliw;
 wire alu_srlw = inst_srlw | inst_srliw;
 wire alu_sraw = inst_sraw | inst_sraiw;
+wire alu_mul = inst_mul;
+wire alu_mulh = inst_mulh | inst_mulhsu | inst_mulhu;
+wire alu_mulw = inst_mulw;
 
-encoder32_5 Encoder32_5(.in({9'b0, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
+encoder32_5 Encoder32_5(.in({6'b0, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
 
 /* csr signal */
 wire [4 : 0] csr_uimm = rs1_r_addr;

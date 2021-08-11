@@ -14,6 +14,7 @@ module hazard_unit(
 	input wire [4 : 0] id_rs2_addr,
 	input wire transfer,
 
+	input wire exe_stall_req,
 	
 	/* TODO: think a better way to set stall and flush */
 	output reg [1 : 0] pc_stall,
@@ -34,6 +35,13 @@ always
 			me_wb_stall = `STALL_NEXT;
 		end
 		/* data hazard */
+		else if(exe_stall_req) begin		//mul
+			pc_stall = `STALL_KEEP;
+			if_id_stall = `STALL_KEEP;
+			id_ex_stall = `STALL_KEEP;
+			ex_me_stall = `STALL_ZERO;
+			me_wb_stall = `STALL_NEXT;
+		end
 		else if(ex_csr_rena == 1'b1 &&  ((id_rs1_rena == 1'b1 && id_rs1_addr == ex_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == ex_rd_waddr)) ) begin
 
 			pc_stall = `STALL_KEEP;

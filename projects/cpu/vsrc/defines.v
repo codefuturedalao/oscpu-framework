@@ -84,6 +84,15 @@
 `define FUN3_CSRRSI 3'b110
 `define FUN3_CSRRCI 3'b111
 
+`define FUN3_MUL 3'b000
+`define FUN3_MULH 3'b001
+`define FUN3_MULHSU 3'b010
+`define FUN3_MULHU 3'b011
+`define FUN3_DIV 3'b100
+`define FUN3_DIVU 3'b101
+`define FUN3_REM 3'b110
+`define FUN3_REMU 3'b111
+
 `define REG_RENABLE 1'b1
 `define REG_RDISABLE 1'b0
 `define REG_WENABLE 1'b1

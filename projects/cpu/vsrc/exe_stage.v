@@ -15,12 +15,17 @@ module exe_stage(
 	input wire [`REG_BUS] ex_rs2_data,
 	input wire [`REG_BUS] me_alu_result,
 	input wire [`REG_BUS] wb_rd_data,
+	
+	input wire [127 : 0] mul_result,
+	input wire mul_ready,			
   
+	output wire mul_valid,
+	output wire stall_req,
 	output wire [`REG_BUS] new_rs1_data,
 	output wire [`REG_BUS] new_rs2_data,
-  	output reg  [`REG_BUS] alu_result,
+  	output wire [`REG_BUS] alu_result,
 	output wire [`REG_BUS] target_pc,
-	output reg b_flag			//indicate branch is successful or not
+	output wire b_flag			//indicate branch is successful or not
 );
 
 wire overflow;
@@ -45,8 +50,11 @@ op2_mux Op2_mux(.new_rs2_data(new_rs2_data), .imm(imm), .alu_op2_src(alu_op2_src
 
 wire alu_add, alu_slt, alu_sltu, alu_xor, alu_or, alu_and, alu_sll, alu_srl, alu_sra, alu_sub, alu_lui, alu_beq, alu_bne, alu_blt;
 wire alu_bge, alu_bltu, alu_bgeu, alu_addw, alu_subw, alu_sllw, alu_srlw, alu_sraw;
+wire alu_mul, alu_mulh, alu_mulw;
+assign mul_valid = alu_mul | alu_mulh | alu_mulw;
+assign stall_req = mul_valid & ~mul_ready;
 
-decoder5_32 Decoder5_32(.in(alu_op), .out({9'b0, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}));
+decoder5_32 Decoder5_32(.in(alu_op), .out({6'b0, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}));
 
 /* add or sub */
 assign op1_add = op1;
@@ -79,7 +87,12 @@ assign alu_result = ({64{alu_add | alu_sub}} & result_add)
 				|   ({64{alu_sllw}} & {{32{sll_result32[31]}}, sll_result32[31:0]})
 				|   ({64{alu_srlw}} & {{32{srl_result32[31]}}, srl_result32[31:0]})
 				|   ({64{alu_sraw}} & {{32{sra_result32[31]}}, sra_result32[31:0]})
-				|	({64{alu_lui}}  & op2);
+				|	({64{alu_lui}}  & op2)
+				|	({64{alu_mul}}  & mul_result[63 : 0])
+				|	({64{alu_mulh}}  & mul_result[127 : 64])
+				|	({64{alu_mulh}}  & {{32{mul_result[31]}}, mul_result[31 : 0]});
+
+
 
 /* generate b_flag */
 assign b_flag = (alu_beq & zero) | (alu_bne & ~zero) | (alu_blt & (sign ^ overflow)) | (alu_bge & (~(sign ^ overflow)))
@@ -91,6 +104,7 @@ wire [`REG_BUS] target_pc_tmp;
 assign pc_op1 = (pc_src == 1'b1) ? new_rs1_data : pc;
 assign target_pc = {target_pc_tmp[63:1], pc_src == 1 ? 1'b0 : target_pc_tmp[0]};		//JALR make the least significant bit zero
 adder64 Pcadder(.op1(pc_op1), .op2(imm), .cin(0), .result(target_pc_tmp), .zero(), .sign(), .overflow(), .carry(), .cout());
+
 
 
 endmodule

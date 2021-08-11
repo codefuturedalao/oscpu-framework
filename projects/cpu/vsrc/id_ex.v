@@ -28,6 +28,8 @@ module id_ex(
 	input wire id_csr_rena,
 	input wire id_csr_wena,
 	input wire [1 : 0] id_csr_op,
+	input wire id_rs1_sign,
+	input wire id_rs2_sign,
 
 	output reg [`REG_BUS] ex_pc,
 	output reg [`INST_BUS] ex_inst,
@@ -51,7 +53,9 @@ module id_ex(
 	output reg [`ALU_OP_BUS] ex_alu_op,
 	output reg ex_csr_rena,
 	output reg ex_csr_wena,
-	output reg [1 : 0] ex_csr_op
+	output reg [1 : 0] ex_csr_op,
+	output reg ex_rs1_sign,
+	output reg ex_rs2_sign
 );
 
 always
@@ -80,6 +84,8 @@ always
 			ex_csr_rena <= 1'b0;
 			ex_csr_wena <= 1'b0;
 			ex_csr_op <= 2'b00;
+			ex_rs1_sign <= 1'b0;
+			ex_rs2_sign <= 1'b0;
 		end	
 		else begin
 			case(stall)
@@ -107,6 +113,8 @@ always
 					ex_csr_rena <= id_csr_rena;
 					ex_csr_wena <= id_csr_wena;
 					ex_csr_op <= id_csr_op;
+					ex_rs1_sign <= id_rs1_sign;
+					ex_rs2_sign <= id_rs2_sign;
 				end
 				`STALL_KEEP: begin
 				end
@@ -134,6 +142,8 @@ always
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
 					ex_csr_op <= 2'b00;
+					ex_rs1_sign <= 1'b0;
+					ex_rs2_sign <= 1'b0;
 				end
 				default: begin
 					ex_pc <= `ZERO_WORD;
@@ -159,6 +169,8 @@ always
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
 					ex_csr_op <= 2'b00;
+					ex_rs1_sign <= 1'b0;
+					ex_rs2_sign <= 1'b0;
 				end
 			endcase
 		end
