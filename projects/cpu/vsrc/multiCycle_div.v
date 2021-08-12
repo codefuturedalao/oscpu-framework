@@ -103,9 +103,10 @@ assign ready = (counter == 7'd66) | (valid & (overflow | div_zero));
 //TODO: set wire ~div_op2
 wire [127 : 0] overflow_result = div_32 ? {64'b0, {32{1'b1}}, 1'b1, 31'b0} : {64'b0, 1'b1, 63'b0};
 wire [127 : 0] div_zero_result = div_32 ? {32'b0, div_op1[31 : 0], 32'b0, {32{1'b1}}} : {div_op1[63 : 0], {64{1'b1}}};
+wire special_case = ((~div_32 & (quot[63] & ~(|quot[62 : 0]))) | (div_32 & (&quot[63 : 31]) & ~(|quot[30 : 0])));
 
-wire [64 : 0] fix_quot = (div_op1[64] ^ div_op2[64]) ? (((~div_32 & (quot[63] & ~(|quot[62 : 0]))) | (div_32 & (&quot[63 : 31]) & ~(|quot[30 : 0]))) ? quot[64 : 0] : quot[64 : 0] + 1) : quot[64 : 0];
-wire [64 : 0] fix_rem = (rem[64] ^ div_op1[64]) ? ((div_op1[64] ^ div_op2[64]) ? (rem + (~div_op2) + 1) : (rem + div_op2)) : rem;
+wire [64 : 0] fix_quot = (div_op1[64] ^ div_op2[64]) ? (special_case ? quot[64 : 0] : quot[64 : 0] + 1) : quot[64 : 0];
+wire [64 : 0] fix_rem = (rem[64] ^ div_op1[64]) ? ((div_op1[64] ^ div_op2[64]) ? (rem + (~div_op2) + 1) : (rem + div_op2)) : (special_case ? rem + 1'b1 : rem);
 assign div_result = overflow ? overflow_result : (div_zero ?  div_zero_result : {fix_rem[63 : 0], fix_quot[63 : 0]});
 
 always
