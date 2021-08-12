@@ -16,17 +16,6 @@ module multiCycle_div(
 );
 
 
-//No-restore signed division
-/* divide zero */
-// DIVU		REMU		DIV		REM
-// all 1	rs1			-1		rs1 			
-wire div_zero;
-assign div_zero= ~(|div_op2);
-/* divide trap */
-//	100000... / 111111...
-wire overflow;
-assign overflow = div_op1[63] & ~(|div_op1[62 : 0]) & (&div_op2[63 : 0]) & div_sign;
-
 
 /*
 
@@ -97,6 +86,18 @@ wire [64 : 0] quot_next = {((counter == 7'b0) ? div_op1[63 : 0] : quot[63 : 0]),
 wire shift_bit_next = add_result[64];
 
 /* output */
+//No-restore signed division
+/* divide zero */
+// DIVU		REMU		DIV		REM
+// all 1	rs1			-1		rs1 			
+wire div_zero;
+assign div_zero= ~(|div_op2);
+/* divide trap */
+//	100000... / 111111...
+wire overflow;
+assign overflow = div_32 ? (&div_op1[63 : 31] & ~(|div_op1[30 : 0]) & (&div_op2[31 : 0])) :
+		div_op1[63] & ~(|div_op1[62 : 0]) & (&div_op2[63 : 0]) & div_sign;
+
 assign ready = (counter == 7'd66) | (valid & (overflow | div_zero));
 //fix
 //TODO: set wire ~div_op2
