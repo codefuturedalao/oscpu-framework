@@ -100,8 +100,8 @@ wire shift_bit_next = add_result[64];
 assign ready = (counter == 7'd66);
 //fix
 //TODO: set wire ~div_op2
-wire [64 : 0] fix_quot = (div_op1 ^ div_op2) ? (quot[64 : 0] + 1) : quot[64 : 0];
-wire [64 : 0] fix_rem = (rem[64] ^ div_op1[64]) ? ((div_op1 ^ div_op2) ? (rem + (~div_op2) + 1) : (rem + div_op2)) : rem;
+wire [64 : 0] fix_quot = (div_op1[64] ^ div_op2[64]) ? (quot[64 : 0] + 1) : quot[64 : 0];
+wire [64 : 0] fix_rem = (rem[64] ^ div_op1[64]) ? ((div_op1[64] ^ div_op2[64]) ? (rem + (~div_op2) + 1) : (rem + div_op2)) : rem;
 assign div_result = {fix_rem[63 : 0], fix_quot[63 : 0]};
 
 always
