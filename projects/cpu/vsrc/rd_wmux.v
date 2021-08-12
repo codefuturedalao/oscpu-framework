@@ -14,20 +14,7 @@ module rd_wmux(
 
 	//TODO: figure it out that should use same mask signal	
 	wire [`REG_BUS] mask;
-	//wire [7 : 0] byte_en_new;
-	//wire [`REG_BUS] mem_data_tmp;
 	wire [`REG_BUS] mem_data_new;
-	//wire ext_bit;
-	//assign byte_en_new = byte_enable << alu_result[2:0];
-	/*assign mask = { {8{byte_en_new[7]}},
-                {8{byte_en_new[6]}},
-                {8{byte_en_new[5]}},
-                {8{byte_en_new[4]}},
-                {8{byte_en_new[3]}},
-                {8{byte_en_new[2]}},
-                {8{byte_en_new[1]}},
-                {8{byte_en_new[0]}}};
-	*/
 	assign mask = { {8{byte_enable[7]}},
                 {8{byte_enable[6]}},
                 {8{byte_enable[5]}},
@@ -40,9 +27,20 @@ module rd_wmux(
 	
 	wire [5 : 0] shift_bit = {alu_result[2:0], 3'b000};
 	assign mem_data_new = (mem_data >> shift_bit) & mask;
-	//assign mem_data_new = (mem_data & mask) >> shift_bit;
+
+	assign rd_wdata = csr_rena   ? csr_data :
+					  mem_to_reg ? 
+							({64{byte_enable == 8'b0000_0001 & mem_ext_un}} & {56'b0, mem_data_new[7 : 0]} 
+							|{64{byte_enable == 8'b0000_0011 & mem_ext_un}} & {48'b0, mem_data_new[15 : 0]}
+							|{64{byte_enable == 8'b0000_1111 & mem_ext_un}} & {32'b0, mem_data_new[31 : 0]}
+							|{64{byte_enable == 8'b0000_0001 & ~mem_ext_un}} & {{56{mem_data_new[7]}}, mem_data_new[7:0]}
+							|{64{byte_enable == 8'b0000_0011 & ~mem_ext_un}} & {{48{mem_data_new[15]}}, mem_data_new[15:0]}
+							|{64{byte_enable == 8'b0000_1111 & ~mem_ext_un}} & {{32{mem_data_new[31]}}, mem_data_new[31:0]}
+							|{64{byte_enable == 8'b1111_1111}} & {mem_data_new[63 : 0]})	
+				 : alu_result;
 	
 	//load or other
+/*
 	always
 		@(*) begin
 			if(csr_rena == 1'b1) begin
@@ -86,6 +84,6 @@ module rd_wmux(
 				rd_wdata = alu_result;
 			end
 		end	
-	
+*/	
 
 endmodule
