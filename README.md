@@ -35,7 +35,7 @@ environment : vim + verilator + difftest + nemu + gtkwave
 ## DOING:
 * implement Axi Bus for accessing memory
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
-	* memory mask signal generate method
+	* memory mask signal generate method				[done]
 	* regular the stall request signal and priority 
 * add instructions like MUL and DIV using efficient method ( * and / are not what i want lol) use wallace tree to implement multiple op and reuse the adder in exe stage
 ## TODO:

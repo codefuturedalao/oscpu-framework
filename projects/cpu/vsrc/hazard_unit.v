@@ -57,7 +57,7 @@ always
 			ex_me_stall = `STALL_NEXT;
 			me_wb_stall = `STALL_NEXT;
 		end
-		else if(me_csr_rena == 1'b1 &&  ((id_rs1_rena == 1'b1 && id_rs1_addr == me_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == me_rd_waddr)) ) begin
+/*		else if(me_csr_rena == 1'b1 &&  ((id_rs1_rena == 1'b1 && id_rs1_addr == me_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == me_rd_waddr)) ) begin
 
 			pc_stall = `STALL_KEEP;
 			if_id_stall = `STALL_KEEP;
@@ -65,6 +65,7 @@ always
 			ex_me_stall = `STALL_NEXT;
 			me_wb_stall = `STALL_NEXT;
 		end
+*/
 		else begin
 			pc_stall = `STALL_NEXT;
 			if_id_stall = `STALL_NEXT;
