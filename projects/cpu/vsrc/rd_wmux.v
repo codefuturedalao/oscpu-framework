@@ -14,11 +14,12 @@ module rd_wmux(
 
 	//TODO: figure it out that should use same mask signal	
 	wire [`REG_BUS] mask;
-	wire [7 : 0] byte_en_new;
+	//wire [7 : 0] byte_en_new;
+	wire [`REG_BUS] mem_data_tmp;
 	wire [`REG_BUS] mem_data_new;
 	//wire ext_bit;
-	assign byte_en_new = byte_enable << alu_result[2:0];
-	assign mask = { {8{byte_en_new[7]}},
+	//assign byte_en_new = byte_enable << alu_result[2:0];
+	/*assign mask = { {8{byte_en_new[7]}},
                 {8{byte_en_new[6]}},
                 {8{byte_en_new[5]}},
                 {8{byte_en_new[4]}},
@@ -26,8 +27,22 @@ module rd_wmux(
                 {8{byte_en_new[2]}},
                 {8{byte_en_new[1]}},
                 {8{byte_en_new[0]}}};
+	*/
+	assign mask = { {8{byte_enable[7]}},
+                {8{byte_enable[6]}},
+                {8{byte_enable[5]}},
+                {8{byte_enable[4]}},
+                {8{byte_enable[3]}},
+                {8{byte_enable[2]}},
+                {8{byte_enable[1]}},
+                {8{byte_enable[0]}}};
+	
+	
 	wire [5 : 0] shift_bit = {alu_result[2:0], 3'b000};
-	assign mem_data_new = (mem_data & mask) >> shift_bit;
+	assign mem_data_tmp = mem_data  >> shift_bit;
+	assign mem_data_new = (mem_data & mask);
+	//assign mem_data_new = (mem_data & mask) >> shift_bit;
+	
 	//load or other
 	always
 		@(*) begin
