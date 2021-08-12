@@ -25,7 +25,7 @@ assign div_zero= ~(|rs2_data);
 /* divide trap */
 //	100000... / 111111...
 wire overflow;
-assign overflow = rs1_data[63] & ~(|rs1_data[62 : 0]) & (&rs2_data) & div_sign;
+assign overflow = div_op1[63] & ~(|div_op1[62 : 0]) & (&div_op2[63 : 0]) & div_sign;
 
 
 /*
