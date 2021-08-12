@@ -30,10 +30,14 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.11 : use booth2 algorithm to implement mul[h/w/su/u] and pass the test
 
+2021.8.12 : implement divide op during multicycle and pass the test
+
 ## DOING:
 * implement Axi Bus for accessing memory
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
-* add instructions like MUL and DIV using efficient method ( * and / are not what i want lol)
+	* memory mask signal generate method
+	* regular the stall request signal and priority 
+* add instructions like MUL and DIV using efficient method ( * and / are not what i want lol) use wallace tree to implement multiple op and reuse the adder in exe stage
 ## TODO:
 * add csr instruction and relevant register
 * add exception and interrupt handler module (ecall ebreak)
