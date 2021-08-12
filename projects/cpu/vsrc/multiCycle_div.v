@@ -93,7 +93,7 @@ assign cin = ~add_or_sub;
 assign add_result = add_op1 + add_op2 + cin;
 
 wire [64 : 0] rem_next = {add_result[63 : 0], (counter == 7'b0) ? div_op1[64] : quot[64]};
-wire [64 : 0] quot_next = {quot[63 : 0],  add_result[64] ^ div_op2[64]};
+wire [64 : 0] quot_next = {quot[63 : 0],  ~(add_result[64] ^ div_op2[64])};
 wire shift_bit_next = add_result[64];
 
 /* output */
