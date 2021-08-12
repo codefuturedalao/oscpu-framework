@@ -21,7 +21,7 @@ module multiCycle_div(
 // DIVU		REMU		DIV		REM
 // all 1	rs1			-1		rs1 			
 wire div_zero;
-assign div_zero= ~(|rs2_data);
+assign div_zero= ~(|div_op2);
 /* divide trap */
 //	100000... / 111111...
 wire overflow;
