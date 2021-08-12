@@ -97,12 +97,12 @@ wire [64 : 0] quot_next = {((counter == 7'b0) ? div_op1[63 : 0] : quot[63 : 0]),
 wire shift_bit_next = add_result[64];
 
 /* output */
-assign ready = (counter == 7'd66);
+assign ready = (counter == 7'd66) | (valid & (overflow | div_zero));
 //fix
 //TODO: set wire ~div_op2
 wire [64 : 0] fix_quot = (div_op1[64] ^ div_op2[64]) ? (quot[64 : 0] + 1) : quot[64 : 0];
 wire [64 : 0] fix_rem = (rem[64] ^ div_op1[64]) ? ((div_op1[64] ^ div_op2[64]) ? (rem + (~div_op2) + 1) : (rem + div_op2)) : rem;
-assign div_result = {fix_rem[63 : 0], fix_quot[63 : 0]};
+assign div_result = overflow ? {1'b1, 127'b0 } : (div_zero ?  {~(64'b0), rs1_data} : {fix_rem[63 : 0], fix_quot[63 : 0]});
 
 always
 	@(posedge clk) begin
@@ -118,7 +118,7 @@ always
 					rs1_data_r <= (div_32 ? {{33{div_sign & rs1_data[31]}}, rs1_data[31 : 0]} : {div_sign & rs1_data[63], rs1_data});
 					rs2_data_r <= (div_32 ? {{33{div_sign & rs2_data[31]}}, rs2_data[31 : 0]} : {div_sign & rs2_data[63], rs2_data});
 				end
-				if(counter == 7'd66) begin
+				if(counter == 7'd66 || div_zero || overflow) begin
 					counter <= 7'b000_0000;
 					rem <= 65'b0;
 					quot <= 65'b0;
