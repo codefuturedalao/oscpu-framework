@@ -291,6 +291,11 @@ forward_unit Forward_unit(
 wire mul_ready;
 wire mul_valid;
 wire [127 : 0] mul_result;
+wire div_valid;
+wire div_32;
+wire div_sign;
+wire div_ready;
+wire [127 : 0] div_result;
 
 exe_stage Exe_stage(
 	.rst(rst),
@@ -312,6 +317,10 @@ exe_stage Exe_stage(
 	.mul_result(mul_result),
 	.mul_ready(mul_ready),
 	.mul_valid(mul_valid),
+	.div_result(div_result),
+	.div_ready(div_ready),
+	.div_valid(div_valid),
+	.div_32(div_32),
 
 	.stall_req(exe_stall_req),
 	.new_rs1_data(ex_new_rs1_data),
@@ -332,6 +341,19 @@ booth2_mul Booth2_mul(
 
 	.ready(mul_ready),
 	.mul_result(mul_result)
+);
+
+multiCycle_div MultiCycle_div(
+	.clk(clk),
+	.rst(rst),
+	.valid(div_valid),
+	.div_sign(ex_rs1_sign | ex_rs2_sign),
+	.div_32(div_32),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+	
+	.ready(div_ready),
+	.div_result(div_result)
 );
 	
 /* ex_me flip flop */

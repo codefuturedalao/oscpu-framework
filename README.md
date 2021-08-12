@@ -5,7 +5,7 @@ Author : jacksonsang
 
 School : Wuhan university
 
-Project : ysyx(one chip one life)[https://oscpu.github.io/ysyx/wiki/index.html]
+Project : ysyx (one chip one life)[https://oscpu.github.io/ysyx/wiki/index.html]
 
 goal : “一生一芯” 是一个面向初学者的CPU设计训练项目。
 
@@ -26,17 +26,19 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.7  : pass cpu-test except hello-str(lack implementation of sprintf..) and riscv-test
 
+2021.8.10 : use assign instead of always in combinational circuit (in the id and exe module)
+
+2021.8.11 : use booth2 algorithm to implement mul[h/w/su/u] and pass the test
+
 ## DOING:
-* add self-defined instruction to fit abstract-machine and run some software
 * implement Axi Bus for accessing memory
+* optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
+* add instructions like MUL and DIV using efficient method ( * and / are not what i want lol)
 ## TODO:
 * add csr instruction and relevant register
 * add exception and interrupt handler module (ecall ebreak)
 * implement icache and dcache ( didn't make it in NSCSCC, a very challenging work)
-* optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
- add instructions like MUL and DIV using efficient method ( * and / are not what i want lol)
 * improve cpu's perfomance by switching to other micor-architecture like superscalar, out-of-order, more stages pipeline
 * debug with RT-thread
-* use assign instead of always in combinational circuit
 	
 

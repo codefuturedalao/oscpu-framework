@@ -20,6 +20,7 @@ module id_stage(
 	output wire [1 : 0] alu_op2_src,
 	output wire rs1_sign,			//only for mul
 	output wire rs2_sign,			//only for mul
+	//output wire div_sign,
 	/* branch and jump signal */
 	output wire branch,
 	output wire jump,
@@ -147,10 +148,18 @@ wire inst_mulh = opcode_op & (func3 == `FUN3_MULH) & (func7 == `FUN7_M);
 wire inst_mulhsu = opcode_op & (func3 == `FUN3_MULHSU) & (func7 == `FUN7_M);
 wire inst_mulhu = opcode_op & (func3 == `FUN3_MULHU) & (func7 == `FUN7_M);
 wire inst_mulw = opcode_op32 & (func3 == `FUN3_MUL) & (func7 == `FUN7_M);
+wire inst_div = opcode_op & (func3 == `FUN3_DIV) & (func7 == `FUN7_M);
+wire inst_divu = opcode_op & (func3 == `FUN3_DIVU) & (func7 == `FUN7_M);
+wire inst_rem = opcode_op & (func3 == `FUN3_REM) & (func7 == `FUN7_M);
+wire inst_remu = opcode_op & (func3 == `FUN3_REMU) & (func7 == `FUN7_M);
+wire inst_divw = opcode_op32 & (func3 == `FUN3_DIV) & (func7 == `FUN7_M);
+wire inst_divuw = opcode_op32 & (func3 == `FUN3_DIVU) & (func7 == `FUN7_M);
+wire inst_remw = opcode_op32 & (func3 == `FUN3_REM) & (func7 == `FUN7_M);
+wire inst_remuw = opcode_op32 & (func3 == `FUN3_REMU) & (func7 == `FUN7_M);
 
 /* control signal */
-assign rs1_sign = inst_mulh | inst_mulhsu;
-assign rs2_sign = inst_mulh;
+assign rs1_sign = inst_mulh | inst_mulhsu | inst_div | inst_rem | inst_divw | inst_remw;
+assign rs2_sign = inst_mulh | inst_div | inst_rem | inst_divw | inst_remw;
 assign branch = opcode_branch;
 assign jump = opcode_jal | opcode_jalr;
 assign pc_src = opcode_jalr;		//1: from reg; 0: from pc
@@ -213,8 +222,13 @@ wire alu_sraw = inst_sraw | inst_sraiw;
 wire alu_mul = inst_mul;
 wire alu_mulh = inst_mulh | inst_mulhsu | inst_mulhu;
 wire alu_mulw = inst_mulw;
-
-encoder32_5 Encoder32_5(.in({6'b0, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
+wire alu_div = inst_div | inst_divu;
+wire alu_rem = inst_rem | inst_remu;
+wire alu_divw = inst_divw | inst_divuw;
+wire alu_remw = inst_remw | inst_remuw;
+//consider add another control signal that indicates 32 bits calculation
+//that can reduce the number of alu_xxx signal
+encoder32_5 Encoder32_5(.in({2'b0, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
 
 /* csr signal */
 wire [4 : 0] csr_uimm = rs1_r_addr;
