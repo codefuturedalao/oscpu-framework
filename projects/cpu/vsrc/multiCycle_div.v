@@ -97,7 +97,7 @@ wire [64 : 0] quot_next = {quot[63 : 0],  add_result[64] ^ div_op2[64]};
 wire shift_bit_next = add_result[64];
 
 /* output */
-assign ready = (counter == 7'd65);
+assign ready = (counter == 7'd66);
 //fix
 //TODO: set wire ~div_op2
 wire [64 : 0] fix_quot = (div_op1 ^ div_op2) ? (quot[64 : 0] + 1) : quot[64 : 0];
@@ -118,7 +118,7 @@ always
 					rs1_data_r <= (div_32 ? {{33{div_sign & rs1_data[31]}}, rs1_data[31 : 0]} : {div_sign & rs1_data[63], rs1_data});
 					rs2_data_r <= (div_32 ? {{33{div_sign & rs2_data[31]}}, rs2_data[31 : 0]} : {div_sign & rs2_data[63], rs2_data});
 				end
-				if(counter == 7'd65) begin
+				if(counter == 7'd66) begin
 					counter <= 7'b000_0000;
 					rem <= 65'b0;
 					quot <= 65'b0;
