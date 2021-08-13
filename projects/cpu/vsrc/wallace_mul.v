@@ -29,7 +29,7 @@ reg [131 : 0] p [32 : 0];
 //genvar i; 
 generate
         for(i = 0;i < 33;i = i + 1) begin:	booth_decode
-			booth2_decode Booth2_decode(.booth2_code(booth_code[i]), .X(mul_op1), .cin(c[i]), .Y(p[i]));
+			booth2_decode Booth2_decode(.booth2_code(booth_code[i]), .X(mul_op1 << (2 * i)), .cin(c[i]), .Y(p[i]));
         end
 endgenerate
 
