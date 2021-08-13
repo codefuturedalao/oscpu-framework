@@ -18,11 +18,11 @@ module booth2_mul(
 // calculate {rs1_signed, rs1_data} * {rs2_signed, rs2_data}
 /*
 
-            init:  0            init: rs1
+            init:  0            init: rs2
             final: high64       high: high64
    ---> [       hi      ] [         lo      ]       //shift 2 bits per clock 
    |             |
-   |             |                        [       rs2_data        ]
+   |             |                        [       rs1_data        ]
    |             |                                   |
    |             |                                   |
    |             |                            |               |
