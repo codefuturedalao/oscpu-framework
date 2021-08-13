@@ -32,12 +32,14 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.12 : implement divide op during multicycle and pass the test
 
+2021.8.13 : implement mul op using wallace tree within one cycle
+
 ## DOING:
 * implement Axi Bus for accessing memory
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
 	* memory mask signal generate method				[done]
 	* regular the stall request signal and priority 	[done]
-* add instructions like MUL and DIV using efficient method ( * and / are not what i want lol) use wallace tree to implement multiple op and reuse the adder in exe stage
+* add instructions like MUL and DIV using efficient method ( * and / are not what i want lol) use wallace tree to implement multiple op and reuse the adder in exe stage	[done]
 ## TODO:
 * add csr instruction and relevant register
 * add exception and interrupt handler module (ecall ebreak)
