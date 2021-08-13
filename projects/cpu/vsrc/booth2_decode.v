@@ -10,7 +10,7 @@ module booth2_decode #(
 	output wire [WIDTH - 1 : 0] Y
 );
 
-	assign Y = ({WIDTH{(booth2_code == 3'b000) | (booth2_code == 3'b111)}} & {WIDTH{1'b1}})
+	assign Y = ({WIDTH{(booth2_code == 3'b000) | (booth2_code == 3'b111)}} & {WIDTH{1'b0}})
 			|  ({WIDTH{(booth2_code == 3'b001) | (booth2_code == 3'b010)}} & X)
 			|  ({WIDTH{(booth2_code == 3'b011)}} & X << 1)
 			|  ({WIDTH{(booth2_code == 3'b100)}} & ~(X << 1))
