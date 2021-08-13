@@ -55,17 +55,15 @@ endgenerate
 wire [132 : 0] add_op1;	//131 : 0 is number should be add
 wire [131 : 0] add_op2;
 wire [131 : 0] add_result;
-wire [30 : 0] tran_cout [131 : 0]; /* verilator lint_off UNOPTFLAT */
-wire [30 : 0] cout_temp;
-wire [30 : 0] cout_temp1;
+/* verilator lint_off UNOPTFLAT */
+wire [30 : 0] tran_cout [131 : 0]; 
 //wire [30 : 0] tran_cin [131 : 0];
 assign add_op1[0] = c[31];
 //assign tran_cin[0] = c[30 : 0];
 wire cin = c[32];
-//tran33_2 Tran33_2_0(.x(inv_p[0]), .cin(c[30 : 0]), .cout(tran_cout[0]), .c(add_op1[1]), .s(add_op2[0]));
-tran33_2 Tran33_2_0(.x(inv_p[0]), .cin(c[30 : 0]), .cout(cout_temp), .c(add_op1[1]), .s(add_op2[0]));
-tran33_2 Tran33_2_1(.x(inv_p[1]), .cin(cout_temp), .cout(cout_temp1), .c(add_op1[2]), .s(add_op2[1]));
-tran33_2 Tran33_2_2(.x(inv_p[2]), .cin(cout_temp1), .cout(tran_cout[2]), .c(add_op1[3]), .s(add_op2[2]));
+tran33_2 Tran33_2_0(.x(inv_p[0]), .cin(c[30 : 0]), .cout(tran_cout[0]), .c(add_op1[1]), .s(add_op2[0]));
+//tran33_2 Tran33_2_1(.x(inv_p[1]), .cin(tran_cout[0]), .cout(tran_cout[1]), .c(add_op1[2]), .s(add_op2[1]));
+//tran33_2 Tran33_2_2(.x(inv_p[2]), .cin(tran_cout[1]), .cout(tran_cout[2]), .c(add_op1[3]), .s(add_op2[2]));
 //tran33_2 Tran33_2_1(.x(inv_p[1]), .cin(cout[0]), .cout(cout[1]), .c(add_op1[2]), .s(add_op2[1]));
 //genvar i; 
 /*
@@ -75,13 +73,13 @@ generate
         end
 endgenerate
 */
-/*
+
 generate
         for(i = 1;i < 132;i = i + 1) begin:	Tran
-			tran33_2 Tran33_2(.x(inv_p[i]), .cin(tran_cin[i]), .cout(tran_cout[i]), .c(add_op1[i + 1]), .s(add_op2[i]));
+			tran33_2 Tran33_2(.x(inv_p[i]), .cin(tran_cout[i - 1]), .cout(tran_cout[i]), .c(add_op1[i + 1]), .s(add_op2[i]));
         end
 endgenerate
-*/
+
 
 assign add_result = add_op1[131 : 0] + add_op2 + cin;
 assign mul_result = add_result[127 : 0];
