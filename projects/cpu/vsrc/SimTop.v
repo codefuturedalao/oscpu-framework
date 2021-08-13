@@ -288,8 +288,8 @@ forward_unit Forward_unit(
 	.rs2_src(rs2_src)
 );
 
-wire mul_ready;
-wire mul_valid;
+//wire mul_ready;
+//wire mul_valid;
 wire [127 : 0] mul_result;
 wire div_valid;
 wire div_32;
@@ -315,8 +315,8 @@ exe_stage Exe_stage(
 	
 
 	.mul_result(mul_result),
-	.mul_ready(mul_ready),
-	.mul_valid(mul_valid),
+	//.mul_ready(mul_ready),
+	//.mul_valid(mul_valid),
 	.div_result(div_result),
 	.div_ready(div_ready),
 	.div_valid(div_valid),
@@ -329,6 +329,8 @@ exe_stage Exe_stage(
 	.target_pc(ex_target_pc),
 	.b_flag(ex_b_flag)
 );
+//may be i can define a macro to use multicycle or singcycle
+/*
 
 booth2_mul Booth2_mul(
 	.clk(clk),
@@ -340,6 +342,15 @@ booth2_mul Booth2_mul(
 	.rs2_data(ex_new_rs2_data),
 
 	.ready(mul_ready),
+	.mul_result(mul_result)
+);
+*/
+wallace_mul Wallace_mul(
+	.rs1_sign(ex_rs1_sign),
+	.rs2_sign(ex_rs2_sign),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+	
 	.mul_result(mul_result)
 );
 
