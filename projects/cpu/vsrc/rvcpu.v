@@ -1,6 +1,3 @@
-
-//--xuezhen--
-
 `timescale 1ns / 1ps
 
 `include "defines.v"
@@ -23,7 +20,14 @@ module rvcpu(
 			  
 	output wire [63 : 0]  mem_waddr, 
 	output wire [63 : 0]  mem_wmask, 
-	output wire           mem_wena
+	output wire           mem_wena,
+
+	output wire diff_wb_rd_wena,
+	output wire [4 : 0] diff_wb_rd_waddr,
+	output wire [`REG_BUS] diff_wb_rd_data,
+	output wire [`REG_BUS] diff_wb_pc,
+	output wire [`REG_BUS] diff_wb_inst,
+	output wire [`REG_BUS] regs[0 : 31]
 );
 
 // hazard_unit
@@ -33,13 +37,14 @@ wire [1 : 0] id_ex_stall;
 wire [1 : 0] ex_me_stall;
 wire [1 : 0] me_wb_stall;
 
+
 /* if stage */
-//wire clk = clock;
-//wire rst = reset;
 wire [`REG_BUS] new_pc;
 wire [`REG_BUS] if_pc;
 wire [`INST_BUS] if_inst;
 //wire inst_ena;
+assign inst_addr = if_pc;
+assign if_inst = if_pc[2] ? inst_rdata[63 : 32] : inst_rdata[31 : 0];
 
 if_stage If_stage(
   	.clk(clk),
@@ -80,6 +85,8 @@ wire [1 : 0] id_alu_op2_src;
 wire id_branch;
 wire id_jump;
 wire id_pc_src;
+wire id_rs1_sign;
+wire id_rs2_sign;
 // id_stage -> mem_stage
 wire id_mem_rena;
 wire id_mem_wena;
@@ -110,6 +117,8 @@ id_stage Id_stage(
 	.imm(id_imm),
 	.alu_op1_src(id_alu_op1_src),
 	.alu_op2_src(id_alu_op2_src),
+	.rs1_sign(id_rs1_sign),
+	.rs2_sign(id_rs2_sign),
 	.branch(id_branch),
 	.jump(id_jump),
 	.pc_src(id_pc_src),
@@ -131,7 +140,7 @@ wire [`REG_BUS]wb_rd_data;
 wire [`REG_BUS] id_rs1_data;
 wire [`REG_BUS] id_rs2_data;
 // regfile -> difftest
-wire [`REG_BUS] regs[0 : 31];
+//wire [`REG_BUS] regs[0 : 31];
 
 
 regfile Regfile(
@@ -157,6 +166,7 @@ wire [4 : 0] me_rd_waddr;
 wire transfer;
 wire ex_csr_rena;
 wire me_csr_rena;
+wire exe_stall_req;
 
 hazard_unit Hazard_unit(
 	.ex_mem_rena(ex_mem_rena),
@@ -169,6 +179,7 @@ hazard_unit Hazard_unit(
 	.id_rs2_rena(id_rs2_rena),
 	.id_rs2_addr(id_rs2_raddr),
 	.transfer(transfer),
+	.exe_stall_req(exe_stall_req),
 	
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
@@ -200,6 +211,8 @@ wire [`ALU_OP_BUS] ex_alu_op;
 //wire ex_csr_rena;
 wire ex_csr_wena;
 wire [1 : 0] ex_csr_op;
+wire ex_rs1_sign;
+wire ex_rs2_sign;
 
 id_ex Id_ex(
 	.clk(clk),
@@ -229,6 +242,8 @@ id_ex Id_ex(
 	.id_csr_rena(id_csr_rena),
 	.id_csr_wena(id_csr_wena),
 	.id_csr_op(id_csr_op),
+	.id_rs1_sign(id_rs1_sign),
+	.id_rs2_sign(id_rs2_sign),
 
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
@@ -252,7 +267,9 @@ id_ex Id_ex(
 	.ex_alu_op(ex_alu_op),
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
-	.ex_csr_op(ex_csr_op)
+	.ex_csr_op(ex_csr_op),
+	.ex_rs1_sign(ex_rs1_sign),
+	.ex_rs2_sign(ex_rs2_sign)
 );
 
 /* exe stage */
@@ -268,8 +285,6 @@ wire [`REG_BUS] ex_alu_result;
 
 /* forward unit */
 wire me_rd_wena;
-//wire wb_rd_wena;
-//wire [4 : 0] wb_rd_waddr; 
 wire [1 : 0] rs1_src;
 wire [1 : 0] rs2_src;
 
@@ -284,6 +299,15 @@ forward_unit Forward_unit(
 	.rs1_src(rs1_src),
 	.rs2_src(rs2_src)
 );
+
+//wire mul_ready;
+//wire mul_valid;
+wire [127 : 0] mul_result;
+wire div_valid;
+wire div_32;
+wire div_sign;
+wire div_ready;
+wire [127 : 0] div_result;
 
 exe_stage Exe_stage(
 	.rst(rst),
@@ -300,12 +324,59 @@ exe_stage Exe_stage(
 	.ex_rs2_data(ex_rs2_data),
 	.me_alu_result(me_alu_result),
 	.wb_rd_data(wb_rd_data),
+	
 
+	.mul_result(mul_result),
+	//.mul_ready(mul_ready),
+	//.mul_valid(mul_valid),
+	.div_result(div_result),
+	.div_ready(div_ready),
+	.div_valid(div_valid),
+	.div_32(div_32),
+
+	.stall_req(exe_stall_req),
 	.new_rs1_data(ex_new_rs1_data),
 	.new_rs2_data(ex_new_rs2_data),
 	.alu_result(ex_alu_result),
 	.target_pc(ex_target_pc),
 	.b_flag(ex_b_flag)
+);
+//may be i can define a macro to use multicycle or singcycle
+/*
+
+booth2_mul Booth2_mul(
+	.clk(clk),
+	.rst(rst),
+	.valid(mul_valid),
+	.rs1_sign(ex_rs1_sign),
+	.rs2_sign(ex_rs2_sign),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+
+	.ready(mul_ready),
+	.mul_result(mul_result)
+);
+*/
+wallace_mul Wallace_mul(
+	.rs1_sign(ex_rs1_sign),
+	.rs2_sign(ex_rs2_sign),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+	
+	.mul_result(mul_result)
+);
+
+multiCycle_div MultiCycle_div(
+	.clk(clk),
+	.rst(rst),
+	.valid(div_valid),
+	.div_sign(ex_rs1_sign | ex_rs2_sign),
+	.div_32(div_32),
+	.rs1_data(ex_new_rs1_data),
+	.rs2_data(ex_new_rs2_data),
+	
+	.ready(div_ready),
+	.div_result(div_result)
 );
 	
 /* ex_me flip flop */
@@ -390,23 +461,27 @@ pc_mux Pc_mux(
 
 // Access memory
 //reg [`REG_BUS] inst_rdata;
-//wire [`REG_BUS] mem_waddr;
-//wire [`REG_BUS] mem_raddr;
+wire [`REG_BUS] me_mem_waddr;
+wire [`REG_BUS] me_mem_raddr;
 wire [`REG_BUS] me_mem_rdata;
-//wire [`REG_BUS] mem_wdata;
-wire [`REG_BUS] wmask;
 
 wire [7 : 0] byte_en_new;
 
 // waddr is same as raddr
-assign mem_raddr = (me_alu_result - `PC_START) >> 3;
-assign mem_waddr = mem_raddr;
-wire [5 : 0] shift_bit = {me_alu_result[2:0], 3'b000};
-assign mem_wdata = me_new_rs2_data << shift_bit;
+assign me_mem_waddr = me_alu_result;
+assign me_mem_raddr = me_alu_result;
+wire [5 : 0] shift_bit = me_alu_result[2:0] << 3;
 
 assign byte_en_new = me_mem_byte_enable << me_alu_result[2:0];
 
-assign wmask = { {8{byte_en_new[7]}},
+assign mem_rena = me_mem_rena;
+assign mem_raddr = me_mem_raddr;
+assign me_mem_rdata = mem_rdata;
+
+assign mem_wena = me_mem_wena;
+assign mem_wdata = me_new_rs2_data << shift_bit;
+assign mem_waddr = me_mem_waddr;
+assign mem_wmask = { {8{byte_en_new[7]}},
                 {8{byte_en_new[6]}},
                 {8{byte_en_new[5]}},
                 {8{byte_en_new[4]}},
@@ -414,28 +489,6 @@ assign wmask = { {8{byte_en_new[7]}},
                 {8{byte_en_new[2]}},
                 {8{byte_en_new[1]}},
                 {8{byte_en_new[0]}}};
-
-assign mem_wmask = wmask;
-assign mem_wena = me_mem_wena;
-assign mem_rena = me_mem_rena;
-assign me_mem_rdata = mem_rdata;
-/*
-MyRAMHelper RAMHelper(
-  .clk              (clock),
-  .inst_en               (inst_ena),
-  .inst_rIdx             ((if_pc - `PC_START) >> 3),
-  .inst_rdata            (inst_rdata),
-  .data_en               (me_mem_rena),
-  .data_rIdx             ((mem_raddr - `PC_START) >> 3),
-  .data_rdata            (me_mem_rdata),
-  .wIdx             ((mem_waddr - `PC_START) >> 3),
-  .wdata            (mem_wdata),
-  .wmask            (wmask),
-  .wen              (me_mem_wena)
-);
-*/
-assign inst_addr = (if_pc - `PC_START) >> 3;
-assign if_inst = if_pc[2] ? inst_rdata[63 : 32] : inst_rdata[31 : 0];
 
 /* me_wb flip flop */
 wire [`REG_BUS] wb_alu_result;	
@@ -485,6 +538,11 @@ me_wb Me_wb(
 );
 
 /* wb stage */
+assign diff_wb_rd_wena = wb_rd_wena;
+assign diff_wb_rd_waddr = wb_rd_waddr;
+assign diff_wb_rd_data = wb_rd_data;
+assign diff_wb_pc = wb_pc;
+assign diff_wb_inst = wb_inst;
 
 wire [63 : 0] csr_data;
 rd_wmux Rd_wmux(
@@ -511,6 +569,7 @@ csr Csr(
 
 	.csr_data(csr_data)
 );
+
 
 
 endmodule
