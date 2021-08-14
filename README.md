@@ -34,6 +34,8 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.13 : implement mul op using wallace tree within one cycle and pass the test
 
+2021.8.14 : encapsulate the control logic and datapath in rvcpu module and provide necessary port to support difftest in SimTop module, that's also good for add axi interface in simtop
+
 ## DOING:
 * implement Axi Bus for accessing memory
 	* read the fucking manual
@@ -51,7 +53,6 @@ environment : vim + verilator + difftest + nemu + gtkwave
 * add exception and interrupt handler module (ecall ebreak)
 * implement icache and dcache ( didn't make it in NSCSCC, a very challenging work)
 * improve cpu's perfomance by switching to other micor-architecture like superscalar, out-of-order, more stages pipeline
-* encapsulate the control logic and datapath in rvcpu module and provide necessary wire to difftest in SimTop module
 * debug with RT-thread
 	
 
