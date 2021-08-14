@@ -1,5 +1,4 @@
 # oscpu-framework
-A Verilator-based framework.
 
 Author : jacksonsang
 
@@ -55,4 +54,3 @@ environment : vim + verilator + difftest + nemu + gtkwave
 * improve cpu's perfomance by switching to other micor-architecture like superscalar, out-of-order, more stages pipeline
 * debug with RT-thread
 	
-
