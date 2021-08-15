@@ -49,7 +49,7 @@ always
 					end
 				end
 				`STALL_ZERO: begin pc <= `PC_START; end
-				default: begin pc<= `PC_START; end
+				default: begin pc <= `PC_START; end
 			endcase
   		end
 	end

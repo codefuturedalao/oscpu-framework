@@ -62,8 +62,8 @@ module axi_rw # (
 	input                               inst_valid_i,
 	output                              inst_ready_o,
     input                               inst_req_i,
-    output reg [RW_DATA_WIDTH:0]        inst_data_read_o,
-    input  [AXI_DATA_WIDTH:0]           inst_addr_i,
+    output reg [RW_DATA_WIDTH-1:0]        inst_data_read_o,
+    input  [AXI_DATA_WIDTH-1:0]           inst_addr_i,
     input  [1:0]                        inst_size_i,
     output [1:0]                        inst_resp_o,
 
@@ -71,9 +71,9 @@ module axi_rw # (
 	input                               mem_valid_i,
 	output                              mem_ready_o,
     input                               mem_req_i,		//read or write
-    output reg [RW_DATA_WIDTH:0]        mem_data_read_o,
-    input  [RW_DATA_WIDTH:0]            mem_data_write_i,
-    input  [AXI_DATA_WIDTH:0]           mem_addr_i,
+    output reg [RW_DATA_WIDTH-1:0]        mem_data_read_o,
+    input  [RW_DATA_WIDTH-1:0]            mem_data_write_i,
+    input  [AXI_DATA_WIDTH-1:0]           mem_addr_i,
     input  [1:0]                        mem_size_i,
     output [1:0]                        mem_resp_o,
 
@@ -473,7 +473,7 @@ module axi_rw # (
     assign axi_ar_qos_o     = 4'h0;
 
     // Read data channel signals
-    assign axi_r_ready_o    = r_state_if_ar_me_rd | r_state_if_rd_me_ar | r_state_if_rd_me_rd;
+    assign axi_r_ready_o    = r_state_if_ar_me_rd | r_state_if_ie_me_rd | r_state_if_rd_me_ar | r_state_if_rd_me_ie | r_state_if_rd_me_rd;
 
 	//mux by id
 	//interleave enable
