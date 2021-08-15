@@ -33,7 +33,7 @@ module hazard_unit(
 																							//if		//id		//ex		//mem		//wb
 	assign {pc_stall, if_id_stall, id_ex_stall, ex_me_stall, me_wb_stall} = 
 															(transfer & if_stall_req)? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :  //finish read transaction and the deal with transfer, so keep the mem stage
-																			transfer ? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :	//control hazard
+																			transfer ? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_NEXT} :	//control hazard
 																		mem_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :	//load and store
 																		exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT} :	//mul and div
 																		id_stall_req ? {`STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT} :	//data hazard
