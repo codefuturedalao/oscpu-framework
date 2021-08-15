@@ -23,6 +23,7 @@ module ex_me(
 	input wire [4 : 0] ex_rd_waddr,
 	input wire [`REG_BUS] ex_pc,			//for difftest
 	input wire [`INST_BUS] ex_inst,
+	input wire ex_inst_valid,
 	input wire ex_csr_rena,
 	input wire ex_csr_wena,
 	input wire [1 : 0] ex_csr_op,
@@ -45,6 +46,7 @@ module ex_me(
 	output reg [4 : 0] me_rd_waddr,
 	output reg [`REG_BUS] me_pc,
 	output reg [`INST_BUS] me_inst,
+	output reg me_inst_valid,
 	output reg me_csr_rena,
 	output reg me_csr_wena,
 	output reg [1 : 0] me_csr_op
@@ -72,6 +74,7 @@ always
 			me_rd_waddr <= 5'b00000;	
 			me_pc <= `ZERO_WORD;	
 			me_inst <= 32'h0000_000;
+			me_inst_valid <= 1'b0;
 
 			me_csr_rena <= 1'b0;
 			me_csr_wena <= 1'b0;
@@ -99,6 +102,7 @@ always
 					me_rd_waddr <= ex_rd_waddr;
 					me_pc <= ex_pc;	
 					me_inst <= ex_inst;
+					me_inst_valid <= ex_inst_valid;
 
 					me_csr_rena <= ex_csr_rena;
 					me_csr_wena <= ex_csr_wena;
@@ -125,7 +129,8 @@ always
 					me_rd_wena <= 1'b0;
 			//		me_rd_waddr <= 5'b00000;	
 					me_pc <= `ZERO_WORD;
-					me_inst <= 32'h0000_000;
+				//	me_inst <= 32'h0000_000;
+					me_inst_valid <= 1'b0;
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;
@@ -150,7 +155,8 @@ always
 					me_rd_wena <= 1'b0;
 			//		me_rd_waddr <= 5'b00000;	
 					me_pc <= `ZERO_WORD;
-					me_inst <= 32'h0000_000;
+				//	me_inst <= 32'h0000_000;
+					me_inst_valid <= 1'b0;
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;

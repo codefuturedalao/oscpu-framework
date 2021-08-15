@@ -7,6 +7,7 @@ module id_ex(
 	
 	input wire [`REG_BUS] id_pc,
 	input wire [`INST_BUS] id_inst,		//for difftest
+	input wire id_inst_valid,
 	input wire [4 : 0] id_rs1_addr,
 	input wire [4 : 0] id_rs2_addr,
 	input wire [`REG_BUS] id_rs1_data,
@@ -33,6 +34,7 @@ module id_ex(
 
 	output reg [`REG_BUS] ex_pc,
 	output reg [`INST_BUS] ex_inst,
+	output reg ex_inst_valid,
 	output reg [4 : 0] ex_rs1_addr,
 	output reg [4 : 0] ex_rs2_addr,
 	output reg [`REG_BUS] ex_rs1_data,
@@ -81,6 +83,7 @@ always
 			ex_mem_byte_enable <= 8'b0000_0000;
 			ex_alu_op <= `ALU_ZERO;
 			ex_inst <= 32'h0000_0000;
+			ex_inst_valid <= 1'b0;
 			ex_csr_rena <= 1'b0;
 			ex_csr_wena <= 1'b0;
 			ex_csr_op <= 2'b00;
@@ -110,6 +113,7 @@ always
 					ex_mem_byte_enable <= id_mem_byte_enable;
 					ex_alu_op <= id_alu_op;
 					ex_inst <= id_inst;
+					ex_inst_valid <= id_inst_valid;
 					ex_csr_rena <= id_csr_rena;
 					ex_csr_wena <= id_csr_wena;
 					ex_csr_op <= id_csr_op;
@@ -140,7 +144,8 @@ always
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
 				*/
-					ex_inst <= 32'h0000_0000;
+				//	ex_inst <= 32'h0000_0000;
+					ex_inst_valid <= 1'b0;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
 				//	ex_csr_op <= 2'b00;
@@ -169,7 +174,8 @@ always
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
 				*/
-					ex_inst <= 32'h0000_0000;
+				//	ex_inst <= 32'h0000_0000;
+					ex_inst_valid <= 1'b0;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
 				//	ex_csr_op <= 2'b00;

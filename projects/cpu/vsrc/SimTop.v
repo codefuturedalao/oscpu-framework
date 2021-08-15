@@ -33,7 +33,8 @@ module SimTop(
     
     input                               `AXI_TOP_INTERFACE(w_ready),
     output                              `AXI_TOP_INTERFACE(w_valid),
-    output [`AXI_DATA_WIDTH-1:0]        `AXI_TOP_INTERFACE(w_bits_data)         [3:0],
+    output [`AXI_DATA_WIDTH-1:0]        `AXI_TOP_INTERFACE(w_bits_data)         [0:0],
+    //output [`AXI_DATA_WIDTH-1:0]        `AXI_TOP_INTERFACE(w_bits_data),
     output [`AXI_DATA_WIDTH/8-1:0]      `AXI_TOP_INTERFACE(w_bits_strb),
     output                              `AXI_TOP_INTERFACE(w_bits_last),
     output [`AXI_ID_WIDTH-1:0]          `AXI_TOP_INTERFACE(w_bits_id),
@@ -93,6 +94,7 @@ wire [4 : 0] wb_rd_waddr;
 wire [`REG_BUS] wb_rd_data;
 wire [`REG_BUS] wb_pc;
 wire [`REG_BUS] wb_inst;
+wire wb_inst_valid;
 wire [`REG_BUS] regs[0 : 31];		//directly from regfile
 
 rvcpu Rvcpu(
@@ -121,6 +123,7 @@ rvcpu Rvcpu(
 	.diff_wb_rd_data(wb_rd_data),
 	.diff_wb_pc(wb_pc),
 	.diff_wb_inst(wb_inst),
+	.diff_wb_inst_valid(wb_inst_valid),
 	.regs(regs)
 	
 	
@@ -296,7 +299,7 @@ reg [7:0] cmt_wdest;
 reg [`REG_BUS] cmt_wdata;
 reg [`REG_BUS] cmt_pc;
 reg [31:0] cmt_inst;
-reg cmt_vaild;
+reg cmt_valid;
 reg skip;
 reg trap;
 reg [7:0] trap_code;
@@ -329,7 +332,7 @@ DifftestInstrCommit DifftestInstrCommit(
   .clock              (clock),
   .coreid             (0),
   .index              (0),
-  .valid              (cmt_vaild),
+  .valid              (cmt_valid),
   .pc                 (cmt_pc),
   .instr              (cmt_inst),
   .skip               (0),

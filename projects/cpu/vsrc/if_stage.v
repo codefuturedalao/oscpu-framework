@@ -9,7 +9,7 @@ module if_stage(
   	input wire [`REG_BUS] if_data_read,
 	input wire [1 : 0] stall,
   
-	output wire if_valid,
+	output reg if_valid,
 	output wire [1 : 0] if_size,
   	output wire [63 : 0] inst_addr,
   	output reg [31:0] inst,

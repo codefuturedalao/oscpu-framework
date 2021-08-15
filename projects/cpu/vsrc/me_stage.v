@@ -3,8 +3,8 @@
 module me_stage(
 	input wire mem_ready,
 	input wire me_mem_wena,
-	input wire me_mem_rean,
-	input wire [7 : 0] mem_byte_enable;
+	input wire me_mem_rena,
+	input wire [7 : 0] mem_byte_enable,
 	input wire [1 : 0] mem_resp,		//TODO: check
 	input wire [`REG_BUS] mem_data_read_i,
 	input wire [`REG_BUS] me_alu_result,

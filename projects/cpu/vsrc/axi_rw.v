@@ -190,7 +190,7 @@ module axi_rw # (
 						end
 					end
 					R_STATE_IF_IE_ME_AR: begin
-						if(ar_hs && if_valid_i & inst_r_trans) begin
+						if(ar_hs && inst_valid_i & inst_r_trans) begin
 							r_state <= R_STATE_IF_AR_ME_RD;
 						end
 						else if(ar_hs) begin
@@ -283,7 +283,7 @@ module axi_rw # (
     wire mem_len_reset      = reset | (w_trans & w_state_idle) | (mem_r_trans & r_state_idle);
     //wire mem_len_incr_en    = (len != mem_axi_len) & (w_hs | r_hs);		//incre in every data transfer
     //wire mem_len_reset      = reset | (w_trans & w_state_idle);
-    wire mem_len_incr_en    = (len != mem_axi_len) & (w_hs | (r_hs && axi_r_id_i == mem_axi_id));		//incre in every data transfer
+    wire mem_len_incr_en    = (mem_len != mem_axi_len) & (w_hs | (r_hs && axi_r_id_i == mem_axi_id));		//incre in every data transfer
     always @(posedge clock) begin
         if (mem_len_reset) begin
             mem_len <= 0;
@@ -419,10 +419,10 @@ module axi_rw # (
             mem_resp <= 0;
         end
         else if (resp_en) begin
-            mem_resp <= rw_resp_nxt;			//multi cycle
+            mem_resp <= mem_resp_nxt;			//multi cycle
         end
     end
-    assign mem_resp_o      = rw_resp;
+    assign mem_resp_o      = mem_resp;
 
     // ------------------Write Transaction------------------
 	// Write address channel signals
@@ -442,8 +442,8 @@ module axi_rw # (
 	assign axi_w_valid_o 	= w_state_write;
 	assign axi_w_id_o		= mem_axi_id;
     //wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (axi_w_data_i & mask_l) >> aligned_offset_l;
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_i << aligned_offset_l);
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_i >> aligned_offset_h);
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_i << mem_aligned_offset_l);
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_i >> mem_aligned_offset_h);
 
 	//actually no need to judge axi_w_valid_o signal;
 	assign axi_w_data_o = axi_w_valid_o ? (mem_len[0] == 1'b0 ? axi_w_data_l : axi_w_data_h) : {AXI_DATA_WIDTH{1'b0}};
@@ -451,7 +451,7 @@ module axi_rw # (
 	assign axi_w_last_o = axi_w_valid_o ? (mem_len == mem_axi_len) : 1'b0;
 
 	// Write Response channel signals
-	assign b_ready_o = w_state_resp;
+	assign axi_b_ready_o = w_state_resp;
 	
 
 
@@ -461,7 +461,7 @@ module axi_rw # (
 
     // Read address channel signals
     assign axi_ar_valid_o   = r_state_if_ar_me_ie | r_state_if_ie_me_ar | r_state_if_rd_me_ar | r_state_if_ar_me_rd;
-    assign axi_ar_addr_o    = ({AXI_ADDR_WIDTH{r_state_if_ar_me_ie | r_state_if_ar_me_rd}} & inst_axi_addr} | ({AXI_ADDR_WIDTH{r_state_if_ie_me_ar | r_state_if_rd_me_ar}} & mem_axi_addr);		//aligned address
+    assign axi_ar_addr_o    = (({AXI_ADDR_WIDTH{r_state_if_ar_me_ie | r_state_if_ar_me_rd}} & inst_axi_addr) | ({AXI_ADDR_WIDTH{r_state_if_ie_me_ar | r_state_if_rd_me_ar}} & mem_axi_addr));		//aligned address
     assign axi_ar_prot_o    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
     assign axi_ar_id_o      = ({AXI_ID_WIDTH{r_state_if_ar_me_ie | r_state_if_ar_me_rd}} & inst_axi_id) | ({AXI_ID_WIDTH{r_state_if_ie_me_ar | r_state_if_rd_me_ar}} & mem_axi_id);		//0
     assign axi_ar_user_o    = ({AXI_USER_WIDTH{r_state_if_ar_me_ie | r_state_if_ar_me_rd}} & inst_axi_user) | ({AXI_USER_WIDTH{r_state_if_ie_me_ar | r_state_if_rd_me_ar}} & mem_axi_user);		//0

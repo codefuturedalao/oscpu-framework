@@ -7,14 +7,15 @@ module rvcpu(
 	input wire            clk,
 	input wire            rst,
 
+	/* if stage */
 	input wire if_ready,
     input wire [1 : 0] if_resp,
-    input wire if_ready,
     input wire [`REG_BUS] if_data_read,
     output wire if_valid,
     output wire [`REG_BUS] if_addr,
     output wire [1 : 0] if_size,
 
+	/* mem stage */
 	input wire mem_ready,
 	input wire [1 : 0] mem_resp,
 	input wire  [`REG_BUS]  mem_data_read,
@@ -24,21 +25,13 @@ module rvcpu(
 	output wire  [`REG_BUS]  mem_data_write,
 	output wire [1 : 0]  mem_size, 
 	
-	/* mem stage */
-	input wire mem_ready,
-	input wire [1 : 0] mem_resp,
-	input wire  [63 : 0]  mem_data_read,
-	output wire mem_valid,
-	output wire [1 : 0] mem_req,
-	output wire [63 : 0]  mem_addr, 
-	output wire  [63 : 0]  mem_data_write,
-	output wire [1 : 0]  mem_size, 
 
 	output wire diff_wb_rd_wena,
 	output wire [4 : 0] diff_wb_rd_waddr,
 	output wire [`REG_BUS] diff_wb_rd_data,
 	output wire [`REG_BUS] diff_wb_pc,
 	output wire [`REG_BUS] diff_wb_inst,
+	output wire diff_wb_inst_valid,
 	output wire [`REG_BUS] regs[0 : 31]
 );
 
@@ -54,7 +47,7 @@ wire [1 : 0] me_wb_stall;
 wire [`REG_BUS] new_pc;
 wire [`REG_BUS] if_pc;
 wire [`INST_BUS] if_inst;
-wire if_inst_valid;		//TODO: add in stage
+wire if_inst_valid;		
 //wire inst_ena;
 
 if_stage If_stage(
@@ -76,16 +69,19 @@ if_stage If_stage(
 
 /* if_id flip flop */
 wire [`INST_BUS] id_inst;
+wire id_inst_valid;
 wire [`REG_BUS] id_pc;
 
 if_id If_id(
 	.clk(clk),
 	.rst(rst),
 	.if_inst(if_inst),
+	.if_inst_valid(if_inst_valid),
 	.if_pc(if_pc),
 	.stall(if_id_stall),
 	
 	.id_inst(id_inst),
+	.id_inst_valid(id_inst_valid),
 	.id_pc(id_pc)
 );
 
@@ -214,6 +210,7 @@ hazard_unit Hazard_unit(
 /* id_ex flip flop */
 wire [`REG_BUS] ex_pc;
 wire [`INST_BUS] ex_inst;
+wire ex_inst_valid;
 wire [4 : 0] ex_rs1_addr;
 wire [4 : 0] ex_rs2_addr;
 wire [`REG_BUS] ex_rs1_data;
@@ -243,6 +240,7 @@ id_ex Id_ex(
 	
 	.id_pc(id_pc),
 	.id_inst(id_inst),
+	.id_inst_valid(id_inst_valid),
 	.id_rs1_addr(id_rs1_raddr),
 	.id_rs2_addr(id_rs2_raddr),
 	.id_rs1_data(id_rs1_data),
@@ -269,6 +267,7 @@ id_ex Id_ex(
 
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
+	.ex_inst_valid(ex_inst_valid),
 	.ex_rs1_addr(ex_rs1_addr),
 	.ex_rs2_addr(ex_rs2_addr),
 	.ex_rs1_data(ex_rs1_data),
@@ -417,6 +416,7 @@ wire [`REG_BUS] me_new_rs1_data;
 wire [`REG_BUS] me_new_rs2_data;
 wire [`REG_BUS] me_pc;
 wire [`INST_BUS] me_inst;
+wire me_inst_valid;
 //wire me_csr_rena;
 wire me_csr_wena;
 wire [1 : 0] me_csr_op;
@@ -442,6 +442,7 @@ ex_me Ex_me(
 	.ex_rd_waddr(ex_rd_waddr),
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
+	.ex_inst_valid(ex_inst_valid),
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
@@ -462,6 +463,7 @@ ex_me Ex_me(
 	.me_rd_waddr(me_rd_waddr),
 	.me_pc(me_pc),
 	.me_inst(me_inst),
+	.me_inst_valid(me_inst_valid),
 	.me_csr_rena(me_csr_rena),
 	.me_csr_wena(me_csr_wena),
 	.me_csr_op(me_csr_op)	
@@ -490,7 +492,7 @@ me_stage Me_stage(
 	.me_mem_rena(me_mem_rena),
 	.mem_byte_enable(me_mem_byte_enable),
 	.mem_resp(mem_resp),
-	.mem_data_read_i(mem_data_read)
+	.mem_data_read_i(mem_data_read),
 	.me_alu_result(me_alu_result),
 	.me_new_rs2_data(me_new_rs2_data),
 	
@@ -498,7 +500,7 @@ me_stage Me_stage(
 	.mem_valid(mem_valid),
 	.mem_req(mem_req),
 	.mem_data_write(mem_data_write),
-	.mem_data_addr(mem_data_addr),
+	.mem_data_addr(mem_addr),
 	.mem_data_read_o(me_mem_rdata),
 	.mem_size(mem_size),
 	.stall_req(mem_stall_req)
@@ -512,6 +514,7 @@ wire wb_mem_ext_un;
 wire [7 : 0] wb_mem_byte_enable;
 wire [`REG_BUS] wb_pc;
 wire [`INST_BUS] wb_inst;
+wire wb_inst_valid;
 wire wb_csr_rena;
 wire wb_csr_wena;
 wire [1 : 0] wb_csr_op;
@@ -531,6 +534,7 @@ me_wb Me_wb(
 	.me_rd_waddr(me_rd_waddr),
 	.me_pc(me_pc),
 	.me_inst(me_inst),
+	.me_inst_valid(me_inst_valid),
 	.me_csr_rena(me_csr_rena),
 	.me_csr_wena(me_csr_wena),
 	.me_csr_op(me_csr_op),
@@ -545,6 +549,7 @@ me_wb Me_wb(
 	.wb_rd_waddr(wb_rd_waddr),
 	.wb_pc(wb_pc),
 	.wb_inst(wb_inst),
+	.wb_inst_valid(wb_inst_valid),
 	.wb_csr_rena(wb_csr_rena),
 	.wb_csr_wena(wb_csr_wena),
 	.wb_csr_op(wb_csr_op),
@@ -557,6 +562,7 @@ assign diff_wb_rd_waddr = wb_rd_waddr;
 assign diff_wb_rd_data = wb_rd_data;
 assign diff_wb_pc = wb_pc;
 assign diff_wb_inst = wb_inst;
+assign diff_wb_inst_valid = wb_inst_valid;
 
 wire [63 : 0] csr_data;
 rd_wmux Rd_wmux(
