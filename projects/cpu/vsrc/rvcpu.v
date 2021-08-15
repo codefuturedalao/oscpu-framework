@@ -6,21 +6,33 @@
 module rvcpu(
 	input wire            clk,
 	input wire            rst,
-  	input wire  [63 : 0]  inst_rdata,
-		  
-	output wire [63 : 0]  inst_addr, 
-	output wire           inst_ena,
 
-	input wire  [63 : 0]  mem_rdata,
-	 
-	output wire [63 : 0]  mem_raddr, 
-	output wire           mem_rena,
+	input wire if_ready,
+    input wire [1 : 0] if_resp,
+    input wire if_ready,
+    input wire [`REG_BUS] if_data_read,
+    output wire if_valid,
+    output wire [`REG_BUS] if_addr,
+    output wire [1 : 0] if_size,
 
-	output wire  [63 : 0]  mem_wdata,
-			  
-	output wire [63 : 0]  mem_waddr, 
-	output wire [63 : 0]  mem_wmask, 
-	output wire           mem_wena,
+	input wire mem_ready,
+	input wire [1 : 0] mem_resp,
+	input wire  [`REG_BUS]  mem_data_read,
+	output wire mem_valid,
+	output wire [1 : 0] mem_req,
+	output wire [`REG_BUS]  mem_addr, 
+	output wire  [`REG_BUS]  mem_data_write,
+	output wire [1 : 0]  mem_size, 
+	
+	/* mem stage */
+	input wire mem_ready,
+	input wire [1 : 0] mem_resp,
+	input wire  [63 : 0]  mem_data_read,
+	output wire mem_valid,
+	output wire [1 : 0] mem_req,
+	output wire [63 : 0]  mem_addr, 
+	output wire  [63 : 0]  mem_data_write,
+	output wire [1 : 0]  mem_size, 
 
 	output wire diff_wb_rd_wena,
 	output wire [4 : 0] diff_wb_rd_waddr,
@@ -42,18 +54,24 @@ wire [1 : 0] me_wb_stall;
 wire [`REG_BUS] new_pc;
 wire [`REG_BUS] if_pc;
 wire [`INST_BUS] if_inst;
+wire if_inst_valid;		//TODO: add in stage
 //wire inst_ena;
-assign inst_addr = if_pc;
-assign if_inst = if_pc[2] ? inst_rdata[63 : 32] : inst_rdata[31 : 0];
 
 if_stage If_stage(
   	.clk(clk),
   	.rst(rst),
+	.if_ready(if_ready),
+	.if_resp(if_resp),
+	.if_data_read(if_data_read),
 	.new_pc(new_pc),
 	.stall(pc_stall),
   
-  	.inst_addr(if_pc),
-  	.inst_ena(inst_ena)
+	.if_valid(if_valid),
+	.if_size(if_size),
+	.inst(if_inst),
+	.inst_valid(if_inst_valid),
+  	.inst_addr(if_addr),
+	.stall_req(if_stall_req)
 );
 
 /* if_id flip flop */
@@ -166,7 +184,9 @@ wire [4 : 0] me_rd_waddr;
 wire transfer;
 wire ex_csr_rena;
 wire me_csr_rena;
+wire if_stall_req;
 wire exe_stall_req;
+wire mem_stall_req;
 
 hazard_unit Hazard_unit(
 	.ex_mem_rena(ex_mem_rena),
@@ -179,7 +199,9 @@ hazard_unit Hazard_unit(
 	.id_rs2_rena(id_rs2_rena),
 	.id_rs2_addr(id_rs2_raddr),
 	.transfer(transfer),
+	.if_stall_req(if_stall_req),
 	.exe_stall_req(exe_stall_req),
+	.mem_stall_req(mem_stall_req),
 	
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
@@ -460,35 +482,27 @@ pc_mux Pc_mux(
 
 
 // Access memory
-//reg [`REG_BUS] inst_rdata;
-wire [`REG_BUS] me_mem_waddr;
-wire [`REG_BUS] me_mem_raddr;
 wire [`REG_BUS] me_mem_rdata;
 
-wire [7 : 0] byte_en_new;
-
-// waddr is same as raddr
-assign me_mem_waddr = me_alu_result;
-assign me_mem_raddr = me_alu_result;
-wire [5 : 0] shift_bit = me_alu_result[2:0] << 3;
-
-assign byte_en_new = me_mem_byte_enable << me_alu_result[2:0];
-
-assign mem_rena = me_mem_rena;
-assign mem_raddr = me_mem_raddr;
-assign me_mem_rdata = mem_rdata;
-
-assign mem_wena = me_mem_wena;
-assign mem_wdata = me_new_rs2_data << shift_bit;
-assign mem_waddr = me_mem_waddr;
-assign mem_wmask = { {8{byte_en_new[7]}},
-                {8{byte_en_new[6]}},
-                {8{byte_en_new[5]}},
-                {8{byte_en_new[4]}},
-                {8{byte_en_new[3]}},
-                {8{byte_en_new[2]}},
-                {8{byte_en_new[1]}},
-                {8{byte_en_new[0]}}};
+me_stage Me_stage(
+	.mem_ready(mem_ready),
+	.me_mem_wena(me_mem_wena),
+	.me_mem_rena(me_mem_rena),
+	.mem_byte_enable(me_mem_byte_enable),
+	.mem_resp(mem_resp),
+	.mem_data_read_i(mem_data_read)
+	.me_alu_result(me_alu_result),
+	.me_new_rs2_data(me_new_rs2_data),
+	
+	
+	.mem_valid(mem_valid),
+	.mem_req(mem_req),
+	.mem_data_write(mem_data_write),
+	.mem_data_addr(mem_data_addr),
+	.mem_data_read_o(me_mem_rdata),
+	.mem_size(mem_size),
+	.stall_req(mem_stall_req)
+);
 
 /* me_wb flip flop */
 wire [`REG_BUS] wb_alu_result;	

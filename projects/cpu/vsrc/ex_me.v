@@ -107,54 +107,54 @@ always
 				`STALL_KEEP: begin
 				end
 				`STALL_ZERO: begin
-					me_target_pc <= `ZERO_WORD;
+			//		me_target_pc <= `ZERO_WORD;
 					me_branch <= 1'b0;
 					me_jump <= 1'b0;
 					me_b_flag <= 1'b0;
 					
 					me_mem_rena <= 1'b0;
 					me_mem_wena <= 1'b0;
-					me_mem_ext_un <= 1'b0;
-					me_mem_to_reg <= 1'b0;
+			//		me_mem_ext_un <= 1'b0;
+			//		me_mem_to_reg <= 1'b0;
 
-					me_mem_byte_enable <= 8'b0;
-					me_alu_result <= `ZERO_WORD;
-					me_new_rs1_data <= `ZERO_WORD;
-					me_new_rs2_data <= `ZERO_WORD;
+			//		me_mem_byte_enable <= 8'b0;
+			//		me_alu_result <= `ZERO_WORD;
+			//		me_new_rs1_data <= `ZERO_WORD;
+			//		me_new_rs2_data <= `ZERO_WORD;
 
 					me_rd_wena <= 1'b0;
-					me_rd_waddr <= 5'b00000;	
+			//		me_rd_waddr <= 5'b00000;	
 					me_pc <= `ZERO_WORD;
 					me_inst <= 32'h0000_000;
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;
-					me_csr_op <= 2'b00;
+			//		me_csr_op <= 2'b00;
 				end
 				default: begin
-					me_target_pc <= `ZERO_WORD;
+			//		me_target_pc <= `ZERO_WORD;
 					me_branch <= 1'b0;
 					me_jump <= 1'b0;
 					me_b_flag <= 1'b0;
 					
 					me_mem_rena <= 1'b0;
 					me_mem_wena <= 1'b0;
-					me_mem_ext_un <= 1'b0;
-					me_mem_to_reg <= 1'b0;
+			//		me_mem_ext_un <= 1'b0;
+			//		me_mem_to_reg <= 1'b0;
 
-					me_mem_byte_enable <= 8'b0;
-					me_alu_result <= `ZERO_WORD;
-					me_new_rs1_data <= `ZERO_WORD;
-					me_new_rs2_data <= `ZERO_WORD;
+			//		me_mem_byte_enable <= 8'b0;
+			//		me_alu_result <= `ZERO_WORD;
+			//		me_new_rs1_data <= `ZERO_WORD;
+			//		me_new_rs2_data <= `ZERO_WORD;
 
 					me_rd_wena <= 1'b0;
-					me_rd_waddr <= 5'b00000;	
+			//		me_rd_waddr <= 5'b00000;	
 					me_pc <= `ZERO_WORD;
 					me_inst <= 32'h0000_000;
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;
-					me_csr_op <= 2'b00;
+			//		me_csr_op <= 2'b00;
 				end
 			endcase
 		end	

@@ -71,34 +71,34 @@ always
 				`STALL_KEEP: begin
 				end
 				`STALL_ZERO: begin
-					wb_alu_result <= `ZERO_WORD;
-					wb_mem_data <= `ZERO_WORD;
-					wb_mem_to_reg <= 1'b0;
-					wb_mem_ext_un <= 1'b0;
-					wb_mem_byte_enable <= 8'b0000_0000;
+//					wb_alu_result <= `ZERO_WORD;
+//					wb_mem_data <= `ZERO_WORD;
+//					wb_mem_to_reg <= 1'b0;
+//					wb_mem_ext_un <= 1'b0;
+//					wb_mem_byte_enable <= 8'b0000_0000;
 					wb_rd_wena <= 1'b0;
-					wb_rd_waddr <= 5'b00000;
+//					wb_rd_waddr <= 5'b00000;
 					wb_pc <= `ZERO_WORD;
 					wb_inst <= 32'h0000_0000;
 					wb_csr_rena <= 1'b0;
 					wb_csr_wena <= 1'b0;
-					wb_csr_op <= 2'b00;
-					wb_new_rs1_data <= `ZERO_WORD;
+//					wb_csr_op <= 2'b00;
+//					wb_new_rs1_data <= `ZERO_WORD;
 				end
 				default: begin	
-					wb_alu_result <= `ZERO_WORD;
-					wb_mem_data <= `ZERO_WORD;
-					wb_mem_to_reg <= 1'b0;
-					wb_mem_ext_un <= 1'b0;
-					wb_mem_byte_enable <= 8'b0000_0000;
+//					wb_alu_result <= `ZERO_WORD;
+//					wb_mem_data <= `ZERO_WORD;
+//					wb_mem_to_reg <= 1'b0;
+//					wb_mem_ext_un <= 1'b0;
+//					wb_mem_byte_enable <= 8'b0000_0000;
 					wb_rd_wena <= 1'b0;
-					wb_rd_waddr <= 5'b00000;
+//					wb_rd_waddr <= 5'b00000;
 					wb_pc <= `ZERO_WORD;
 					wb_inst <= 32'h0000_0000;
 					wb_csr_rena <= 1'b0;
 					wb_csr_wena <= 1'b0;
-					wb_csr_op <= 2'b00;
-					wb_new_rs1_data <= `ZERO_WORD;
+//					wb_csr_op <= 2'b00;
+//					wb_new_rs1_data <= `ZERO_WORD;
 				end
 			endcase
 		end

@@ -120,57 +120,61 @@ always
 				end
 				`STALL_ZERO: begin
 					ex_pc <= `ZERO_WORD;
-					ex_rs1_data <= `ZERO_WORD;
+				/*	ex_rs1_data <= `ZERO_WORD;
 					ex_rs2_data <= `ZERO_WORD;
 					ex_rs1_addr <= 5'b00000;
 					ex_rs2_addr <= 5'b00000;
 					ex_alu_op1_src <= 1'b0;
 					ex_alu_op2_src <= 2'b00;
 					ex_imm <= `ZERO_WORD;
+				*/
 					ex_rd_wena <= `REG_WDISABLE;
-					ex_rd_waddr <= 5'b00000;
+				//	ex_rd_waddr <= 5'b00000;
 					ex_branch <= 1'b0;
 					ex_jump <= 1'b0;
-					ex_pc_src <= `NEXTPC_PC;
+				//	ex_pc_src <= `NEXTPC_PC;
 					ex_mem_rena <= 1'b0;
 					ex_mem_wena <= 1'b0;
-					ex_mem_ext_un <= 1'b0;
+				/*	ex_mem_ext_un <= 1'b0;
 					ex_mem_to_reg <= 1'b0;
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
+				*/
 					ex_inst <= 32'h0000_0000;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
-					ex_csr_op <= 2'b00;
-					ex_rs1_sign <= 1'b0;
-					ex_rs2_sign <= 1'b0;
+				//	ex_csr_op <= 2'b00;
+				//	ex_rs1_sign <= 1'b0;
+				//	ex_rs2_sign <= 1'b0;
 				end
 				default: begin
 					ex_pc <= `ZERO_WORD;
-					ex_rs1_data <= `ZERO_WORD;
+				/*	ex_rs1_data <= `ZERO_WORD;
 					ex_rs2_data <= `ZERO_WORD;
 					ex_rs1_addr <= 5'b00000;
 					ex_rs2_addr <= 5'b00000;
 					ex_alu_op1_src <= 1'b0;
 					ex_alu_op2_src <= 2'b00;
 					ex_imm <= `ZERO_WORD;
+				*/
 					ex_rd_wena <= `REG_WDISABLE;
-					ex_rd_waddr <= 5'b00000;
+				//	ex_rd_waddr <= 5'b00000;
 					ex_branch <= 1'b0;
 					ex_jump <= 1'b0;
-					ex_pc_src <= `NEXTPC_PC;
+				//	ex_pc_src <= `NEXTPC_PC;
 					ex_mem_rena <= 1'b0;
 					ex_mem_wena <= 1'b0;
-					ex_mem_ext_un <= 1'b0;
+				/*	ex_mem_ext_un <= 1'b0;
 					ex_mem_to_reg <= 1'b0;
 					ex_mem_byte_enable <= 8'b0000_0000;
 					ex_alu_op <= `ALU_ZERO;
+				*/
 					ex_inst <= 32'h0000_0000;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
-					ex_csr_op <= 2'b00;
-					ex_rs1_sign <= 1'b0;
-					ex_rs2_sign <= 1'b0;
+				//	ex_csr_op <= 2'b00;
+				//	ex_rs1_sign <= 1'b0;
+				//	ex_rs2_sign <= 1'b0;
 				end
 			endcase
 		end

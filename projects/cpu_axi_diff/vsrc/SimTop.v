@@ -185,8 +185,7 @@ module SimTop(
         .axi_ar_cache_o                 (ar_cache),
         .axi_ar_qos_o                   (ar_qos),
         
-        .axi_r_ready_o                  (r_ready),
-        .axi_r_valid_i                  (r_valid),
+        .axi_r_ready_o                  (r_ready), .axi_r_valid_i                  (r_valid),
         .axi_r_resp_i                   (r_resp),
         .axi_r_data_i                   (r_data),
         .axi_r_last_i                   (r_last),
