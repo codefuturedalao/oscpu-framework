@@ -48,6 +48,7 @@ wire [`REG_BUS] new_pc;
 wire [`REG_BUS] if_pc;
 wire [`INST_BUS] if_inst;
 wire if_inst_valid;		
+assign if_pc = if_addr;
 //wire inst_ena;
 
 if_stage If_stage(
