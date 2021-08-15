@@ -305,7 +305,7 @@ reg trap;
 reg [7:0] trap_code;
 reg [63:0] cycleCnt;
 reg [63:0] instrCnt;
-reg [`REG_BUS] regs_diff [0 : 31];
+//reg [`REG_BUS] regs_diff [0 : 31];
 
 always @(posedge clock) begin
   if (reset) begin
@@ -319,7 +319,7 @@ always @(posedge clock) begin
     cmt_inst <= wb_inst;
     cmt_valid <= wb_inst_valid;
 
-    regs_diff <= regs;
+ //   regs_diff <= regs;
 
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
@@ -346,38 +346,38 @@ DifftestInstrCommit DifftestInstrCommit(
 DifftestArchIntRegState DifftestArchIntRegState (
   .clock              (clock),
   .coreid             (0),
-  .gpr_0              (regs_diff[0]),
-  .gpr_1              (regs_diff[1]),
-  .gpr_2              (regs_diff[2]),
-  .gpr_3              (regs_diff[3]),
-  .gpr_4              (regs_diff[4]),
-  .gpr_5              (regs_diff[5]),
-  .gpr_6              (regs_diff[6]),
-  .gpr_7              (regs_diff[7]),
-  .gpr_8              (regs_diff[8]),
-  .gpr_9              (regs_diff[9]),
-  .gpr_10             (regs_diff[10]),
-  .gpr_11             (regs_diff[11]),
-  .gpr_12             (regs_diff[12]),
-  .gpr_13             (regs_diff[13]),
-  .gpr_14             (regs_diff[14]),
-  .gpr_15             (regs_diff[15]),
-  .gpr_16             (regs_diff[16]),
-  .gpr_17             (regs_diff[17]),
-  .gpr_18             (regs_diff[18]),
-  .gpr_19             (regs_diff[19]),
-  .gpr_20             (regs_diff[20]),
-  .gpr_21             (regs_diff[21]),
-  .gpr_22             (regs_diff[22]),
-  .gpr_23             (regs_diff[23]),
-  .gpr_24             (regs_diff[24]),
-  .gpr_25             (regs_diff[25]),
-  .gpr_26             (regs_diff[26]),
-  .gpr_27             (regs_diff[27]),
-  .gpr_28             (regs_diff[28]),
-  .gpr_29             (regs_diff[29]),
-  .gpr_30             (regs_diff[30]),
-  .gpr_31             (regs_diff[31])
+  .gpr_0              (regs[0]),
+  .gpr_1              (regs[1]),
+  .gpr_2              (regs[2]),
+  .gpr_3              (regs[3]),
+  .gpr_4              (regs[4]),
+  .gpr_5              (regs[5]),
+  .gpr_6              (regs[6]),
+  .gpr_7              (regs[7]),
+  .gpr_8              (regs[8]),
+  .gpr_9              (regs[9]),
+  .gpr_10             (regs[10]),
+  .gpr_11             (regs[11]),
+  .gpr_12             (regs[12]),
+  .gpr_13             (regs[13]),
+  .gpr_14             (regs[14]),
+  .gpr_15             (regs[15]),
+  .gpr_16             (regs[16]),
+  .gpr_17             (regs[17]),
+  .gpr_18             (regs[18]),
+  .gpr_19             (regs[19]),
+  .gpr_20             (regs[20]),
+  .gpr_21             (regs[21]),
+  .gpr_22             (regs[22]),
+  .gpr_23             (regs[23]),
+  .gpr_24             (regs[24]),
+  .gpr_25             (regs[25]),
+  .gpr_26             (regs[26]),
+  .gpr_27             (regs[27]),
+  .gpr_28             (regs[28]),
+  .gpr_29             (regs[29]),
+  .gpr_30             (regs[30]),
+  .gpr_31             (regs[31])
 );
 
 DifftestTrapEvent DifftestTrapEvent(
