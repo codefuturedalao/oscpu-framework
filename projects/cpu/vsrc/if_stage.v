@@ -48,7 +48,7 @@ always
 				`STALL_KEEP: begin 
 					pc <= pc; 
 					if(handshake_done) begin
-						if_valid_r <= 1'b1;
+						if_valid_r <= 1'b0;
 						inst_valid_r <= 1'b1;
 					end
 				end

@@ -368,7 +368,7 @@ module axi_rw # (
     wire [AXI_DATA_WIDTH/8-1:0] mem_strb_l      = mem_strb << mem_addr_i[ALIGNED_WIDTH-1 : 0]; 
     wire [AXI_DATA_WIDTH/8-1:0] mem_strb_h      = mem_strb >> (AXI_DATA_WIDTH/8 - mem_addr_i[ALIGNED_WIDTH-1 : 0]);
 
-    wire [AXI_ID_WIDTH-1:0] mem_axi_id        = {AXI_ID_WIDTH{1'b1}};		//mem write and read use id 1
+    wire [AXI_ID_WIDTH-1:0] mem_axi_id        = {{AXI_ID_WIDTH-1{1'b0}}, 1'b1};		//mem write and read use id 1
     wire [AXI_USER_WIDTH-1:0] mem_axi_user    = {AXI_USER_WIDTH{1'b0}};
 
 
