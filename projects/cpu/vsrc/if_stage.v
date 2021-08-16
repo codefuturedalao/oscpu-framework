@@ -18,13 +18,15 @@ module if_stage(
 );
 
 reg inst_valid_r;
+reg if_valid_r;
 
-wire handshake_done = if_valid & if_ready;
+wire handshake_done = if_valid_r & if_ready;
 //assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
-assign stall_req = if_valid & ~if_ready;
+assign stall_req = if_valid_r & ~if_ready;
 assign inst = if_data_read[31 : 0];
-assign inst_valid = (if_valid & if_ready) | inst_valid_r;
+assign if_valid = if_valid_r & ~(inst_valid & (stall == `STALL_KEEP));
+assign inst_valid = (if_valid_r & if_ready) | inst_valid_r;
 
 reg [`REG_BUS] pc;
 
@@ -33,20 +35,20 @@ always
 	@(posedge clk) begin
   		if(rst == 1'b1) begin
     		pc <= `PC_START;
-			if_valid <= 1'b1;
+			if_valid_r <= 1'b1;
 			inst_valid_r <= 1'b0;
   		end
  		else begin
 			case(stall)
 				`STALL_NEXT: begin 
 					pc <= new_pc; 
-					if_valid <= 1'b1;
+					if_valid_r <= 1'b1;
 					inst_valid_r <= 1'b0;
 				end
 				`STALL_KEEP: begin 
 					pc <= pc; 
 					if(handshake_done) begin
-						if_valid <= 1'b0;
+						if_valid_r <= 1'b1;
 						inst_valid_r <= 1'b1;
 					end
 				end
