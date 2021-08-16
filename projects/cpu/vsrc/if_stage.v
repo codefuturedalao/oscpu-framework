@@ -23,7 +23,7 @@ reg if_valid_r;
 wire handshake_done = if_valid_r & if_ready;
 //assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
-assign stall_req = if_valid_r & ~if_ready;
+assign stall_req = if_valid_r & ~if_ready;		//TODO:
 assign inst = if_data_read[31 : 0];
 assign if_valid = if_valid_r & ~(inst_valid & (stall == `STALL_KEEP));
 assign inst_valid = (if_valid_r & if_ready) | inst_valid_r;

@@ -6,15 +6,15 @@ module rd_wmux(
 	input wire [`REG_BUS] csr_data,
 	input wire mem_to_reg,
 	input wire mem_ext_un,
-	input wire [7 : 0] byte_enable,
+	input wire [7 : 0] byte_enable,		//useless
 	input wire csr_rena,
 	
 	output reg [`REG_BUS] rd_wdata
 );
 
-	wire [`REG_BUS] mask;
+	//wire [`REG_BUS] mask;
 	wire [`REG_BUS] mem_data_new;
-	assign mask = { {8{byte_enable[7]}},
+	/*assign mask = { {8{byte_enable[7]}},
                 {8{byte_enable[6]}},
                 {8{byte_enable[5]}},
                 {8{byte_enable[4]}},
@@ -25,7 +25,8 @@ module rd_wmux(
 	
 	
 	wire [5 : 0] shift_bit = {alu_result[2:0], 3'b000};
-	assign mem_data_new = (mem_data >> shift_bit) & mask;
+	*/
+	assign mem_data_new = mem_data;
 
 	//load or other
 	assign rd_wdata = csr_rena   ? csr_data :
