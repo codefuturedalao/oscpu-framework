@@ -373,6 +373,7 @@ exe_stage Exe_stage(
 	.me_alu_result(me_alu_result),
 	.wb_rd_data(wb_rd_data),
 	
+	.inst(ex_inst),
 
 	.mul_result(mul_result),
 	//.mul_ready(mul_ready),

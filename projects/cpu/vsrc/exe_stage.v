@@ -20,6 +20,9 @@ module exe_stage(
 //	input wire mul_ready,			
 	input wire [127 : 0] div_result,
 	input wire div_ready,			
+
+	//for self defined inst
+	input wire [`INST_BUS] inst,
   
 //	output wire mul_valid,
 	output wire div_valid,
@@ -30,7 +33,14 @@ module exe_stage(
   	output wire [`REG_BUS] alu_result,
 	output wire [`REG_BUS] target_pc,
 	output wire b_flag			//indicate branch is successful or not
+
 );
+always
+	@(*) begin
+		if(inst == 32'h0005000b) begin
+			$write("%c", new_rs1_data[7 : 0]);
+		end
+	end
 
 wire overflow;
 wire sign;
