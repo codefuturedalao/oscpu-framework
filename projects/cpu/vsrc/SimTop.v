@@ -327,7 +327,7 @@ always @(posedge clock) begin
     cmt_valid <= wb_inst_valid;
 
  //   regs_diff <= regs;
-	skip <= wb_pc == 64'h00000000_8000_12e4;
+	skip <= wb_pc == 64'h00000000_8000_12ec;
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
     cycleCnt <= 1 + cycleCnt;
@@ -342,8 +342,8 @@ DifftestInstrCommit DifftestInstrCommit(
   .valid              (cmt_valid),
   .pc                 (cmt_pc),
   .instr              (cmt_inst),
-  //.skip               (skip),
-  .skip               (0),
+  .skip               (skip),
+  //.skip               (0),
   .isRVC              (0),
   .scFailed           (0),
   .wen                (cmt_wen),
