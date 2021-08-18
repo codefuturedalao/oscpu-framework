@@ -19,6 +19,8 @@ module hazard_unit(
 	input wire b_flag,
 	//input wire control_transfer,
 	input wire exception_transfer,
+	input wire [`REG_BUS] control_target_pc_i,
+	input wire [`REG_BUS] exception_target_pc_i,
 
 	input wire if_stall_req,
 	input wire exe_stall_req,
@@ -26,6 +28,8 @@ module hazard_unit(
 	
 	/* TODO: think a better way to set stall and flush */
 	output wire control_transfer,
+	output wire [`REG_BUS] control_target_pc_o,
+	output wire [`REG_BUS] exception_target_pc_o,
 	output reg [1 : 0] pc_stall,
 	output reg [1 : 0] if_id_stall,
 	output reg [1 : 0] id_ex_stall,
@@ -34,16 +38,24 @@ module hazard_unit(
 );
 	reg exception_transfer_r;
 	reg control_transfer_r;
+	reg [`REG_BUS] control_target_pc_r;
+	reg [`REG_BUS] exception_target_pc_r;
+	assign control_target_pc_o = (~if_stall_req & control_transfer) ? control_target_pc_i : control_target_pc_r;
+	assign exception_target_pc_o = (~if_stall_req & exception_transfer) ? exception_target_pc_i : exception_target_pc_r;
+
 	always
     	@(posedge clk) begin
 			if(rst == 1'b1) begin
 				exception_transfer_r <= 1'b0;
+				exception_target_pc_r <= {64{1'b0}};
 			end
 			else if(if_stall_req == 1'b1 && exception_transfer) begin
 				exception_transfer_r <= exception_transfer;
+				exception_target_pc_r <= exception_target_pc_i;
 			end
 			else if(if_stall_req == 1'b0) begin//pc=next
 				exception_transfer_r <= 1'b0;
+				exception_target_pc_r <= {64{1'b0}};
 			end
 		end
 
@@ -52,12 +64,15 @@ module hazard_unit(
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
 				control_transfer_r <= 1'b0;
+				control_target_pc_r <= {64{1'b0}};
 			end
 			else if(if_stall_req == 1'b1 && control_transfer) begin
 				control_transfer_r <= control_transfer;
+				control_target_pc_r <= control_target_pc_i;
 			end
 			else if(if_stall_req == 1'b0) begin
 				control_transfer_r <= 1'b0;
+				control_target_pc_r <= {64{1'b0}};
 			end
 			
 		end

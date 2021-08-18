@@ -197,6 +197,9 @@ wire if_stall_req;
 wire exe_stall_req;
 wire mem_stall_req;
 
+wire [`REG_BUS] hazard_control_target_pc;
+wire [`REG_BUS] hazard_exception_target_pc;
+
 hazard_unit Hazard_unit(
 	.rst(rst),
 	.clk(clk),
@@ -213,11 +216,15 @@ hazard_unit Hazard_unit(
 	.jump(me_jump),
 	.b_flag(me_b_flag),
 	.exception_transfer(exception_transfer),
+	.control_target_pc_i(me_target_pc),
+	.exception_target_pc_i(exception_target_pc),
 	.if_stall_req(if_stall_req),
 	.exe_stall_req(exe_stall_req),
 	.mem_stall_req(mem_stall_req),
 	
 	.control_transfer(control_transfer),
+	.control_target_pc_o(hazard_control_target_pc),
+	.exception_target_pc_o(hazard_exception_target_pc),
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
 	.id_ex_stall(id_ex_stall),
@@ -408,6 +415,10 @@ booth2_mul Booth2_mul(
 	.mul_result(mul_result)
 );
 */
+assign mul_result = {`ZERO_WORD, `ZERO_WORD};
+assign div_result = {`ZERO_WORD, `ZERO_WORD};
+assign div_ready;
+/*
 wallace_mul Wallace_mul(
 	.rs1_sign(ex_rs1_sign),
 	.rs2_sign(ex_rs2_sign),
@@ -430,6 +441,7 @@ multiCycle_div MultiCycle_div(
 	.div_result(div_result)
 );
 	
+*/
 /* ex_me flip flop */
 wire [`REG_BUS] me_target_pc;
 wire me_branch;
@@ -514,9 +526,9 @@ wire [`REG_BUS] exception_target_pc;
 pc_mux Pc_mux(
 	.old_pc(if_pc),	
 	.control_transfer(control_transfer),
-	.control_target_pc(me_target_pc),
+	.control_target_pc(hazard_control_target_pc),
 	.exception_transfer(exception_transfer),
-	.exception_target_pc(exception_target_pc),
+	.exception_target_pc(hazard_exception_target_pc),
 	
 	.new_pc(new_pc)
 );
