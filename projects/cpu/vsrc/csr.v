@@ -89,7 +89,7 @@ module csr(
 	always
 		@(posedge clk) begin
 			if(exception_flag && exception_cause != `MRET) begin		//trap taken
-				mstatus_pie <= {mstatus_ie, 1'b0, 1'b0, 1'b0};
+				mstatus_pie <= {mstatus_ie[3], 1'b0, 1'b0, 1'b0};
 			end
 			if(exception_flag && exception_cause == `MRET) begin		//mret
 				mstatus_pie <= {1'b1, 1'b0, 1'b0, 1'b0};
@@ -205,7 +205,7 @@ module csr(
 		@(posedge clk) begin
 			//TODO: ecall from u-mode and s-mode
 			if(exception_flag && exception_cause != `MRET) begin		//trap taken
-				mcause[`MXLEN - 1] <= {exception_cause[4], {`MXLEN-5{1'b0}}, exception_cause[3 : 0]};		
+				mcause <= {exception_cause[4], {`MXLEN-5{1'b0}}, exception_cause[3 : 0]};		
 			end
 			if(mcause_wen) begin
 				case(csr_op)
