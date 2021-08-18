@@ -198,6 +198,8 @@ wire exe_stall_req;
 wire mem_stall_req;
 
 hazard_unit Hazard_unit(
+	.rst(rst),
+	.clk(clk),
 	.ex_mem_rena(ex_mem_rena),
 	.ex_rd_waddr(ex_rd_waddr),
 	.me_rd_waddr(me_rd_waddr),

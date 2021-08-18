@@ -136,6 +136,12 @@ always
 					shift_bit <= shift_bit_next;
 				end
 			end
+			else begin
+				counter <= 7'b000_0000;
+					rem <= 65'b0;
+					quot <= 65'b0;
+					shift_bit <= 1'b0;
+			end
 		end
 	end
 

@@ -1,6 +1,8 @@
 `include "defines.v"
 
 module hazard_unit(
+	input wire clk,
+	input wire rst,
 	/*data hazard*/
 	input wire ex_mem_rena,
 	input wire [4 : 0] ex_rd_waddr,
@@ -30,6 +32,36 @@ module hazard_unit(
 	output reg [1 : 0] ex_me_stall,
 	output reg [1 : 0] me_wb_stall
 );
+	reg exception_transfer_r;
+	reg control_transfer_r;
+	always
+    	@(posedge clk) begin
+			if(rst == 1'b1) begin
+				exception_transfer_r <= 1'b0;
+			end
+			else if(if_stall_req == 1'b1 && exception_transfer) begin
+				exception_transfer_r <= exception_transer;
+			end
+			else if(if_stall_req == 1'b0) begin//pc=next
+				exception_transfer_r <= 1'b0;
+			end
+		end
+
+
+	always
+		@(posedge clk) begin
+			if(rst == 1'b1) begin
+				control_transfer_r <= 1'b0;
+			end
+			else if(if_stall_req == 1'b1 && control_transfer) begin
+				control_transfer_r <= control_transfer;
+			end
+			else if(if_stall_req == 1'b0) begin
+				control_transfer_r <= 1'b0;
+			end
+			
+		end
+
 
 	wire id_stall_req = (ex_csr_rena == 1'b1 && ((id_rs1_rena == 1'b1 && id_rs1_addr == ex_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == ex_rd_waddr)))
 					| 	(ex_mem_rena == 1'b1 && ((id_rs1_rena == 1'b1 && id_rs1_addr == ex_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == ex_rd_waddr)));
@@ -39,10 +71,16 @@ module hazard_unit(
 	// if stall conflicts with transfer	and when stalled by other reason, should have reg to keep value
 																							//if		//id		//ex		//mem		//wb
 	assign {pc_stall, if_id_stall, id_ex_stall, ex_me_stall, me_wb_stall} = 
-												  (exception_transfer & if_stall_req)? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP} :  //finish read transaction and the deal with transfer, so keep the mem stage
-													(control_transfer & if_stall_req)? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :  //finish read transaction and the deal with transfer, so keep the mem stage
-																  exception_transfer ? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :	//exception hazard
-																	control_transfer ? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_NEXT} :	//control hazard
+												 (exception_transfer & ~if_stall_req)? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :  //finish read transaction and the deal with transfer, so keep the mem stage
+												  (exception_transfer & if_stall_req)? {`STALL_KEEP, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :  //release wb stage, wait if finished, and store the value in exception_transfer_r
+												(exception_transfer_r & if_stall_req)? {`STALL_KEEP, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :  //still wait
+											   (exception_transfer_r & ~if_stall_req)? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :	//exception hazard
+
+													(control_transfer & if_stall_req)? {`STALL_KEEP, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_NEXT} :  //control_transfer is 1 means no exception in wb stage, so release the stage	TODO:make sure no stage in mem, maybe doesn't matter
+													(control_transfer & ~if_stall_req)? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_NEXT} :	//control hazard
+													(control_transfer_r & if_stall_req)? {`STALL_KEEP, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :  //control_transfer is 1 means no exception in wb stage, so release the stage	TODO:make sure no stage in mem, maybe doesn't matter
+													(control_transfer_r & ~if_stall_req)? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :	//control hazard
+
 																		mem_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :	//load and store
 																		exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT} :	//mul and div
 																		id_stall_req ? {`STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT} :	//data hazard
