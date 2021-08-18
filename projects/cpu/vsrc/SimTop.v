@@ -324,7 +324,7 @@ always @(posedge clock) begin
     cmt_wdata <= wb_rd_data;
     cmt_pc <= wb_pc;		
     cmt_inst <= wb_inst;
-    cmt_valid <= wb_inst_valid;
+    cmt_valid <= wb_inst_valid & wb_inst != 32'h0005000b;
 
  //   regs_diff <= regs;
 	skip <= wb_pc == 64'h00000000_8000_12ec;
