@@ -126,23 +126,23 @@ module csr(
 				case(csr_op)
 					`CSR_RW: begin			//only suport M modes
 						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						mstatus_pp <= {2'b00, 2'b00, 1'b0};
-						//mstatus_pie <= {csr_wdata[7], 0, rs1_data[5 : 4]};
+						//mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						mstatus_pp <= {csr_wdata[12 : 11], 2'b0, csr_wdata[8]};
 					end
 					`CSR_RS: begin
-						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b00, 2'b00, 1'b0};
 						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= {csr_wdata[7], 0, rs1_data[5 : 4]} | mstatus_pie;
+						mstatus_pp <= {csr_wdata[12 : 11], 2'b0, csr_wdata[8]} | mstatus_pie;
 					end
 					`CSR_RC: begin
-						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b00, 2'b00, 1'b0};
 						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= ~{csr_wdata[7], 0, rs1_data[5 : 4]} & mstatus_pie;
+						mstatus_pp <= ~{csr_wdata[12 : 11], 2'b0, csr_wdata[8]} & mstatus_pie;
 					end
 					default: begin
-						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b00, 2'b00, 1'b0};
 						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= mstatus_pie;
+						mstatus_pp <= mstatus_pp;
 					end
 				endcase
 			end
