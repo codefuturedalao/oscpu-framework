@@ -64,6 +64,7 @@ wire [`REG_BUS] immS = {{52{inst[31]}}, inst[31 : 25], inst[11 : 7]};
 wire [`REG_BUS] immB = {{52{inst[31]}}, inst[7] ,inst[30 : 25], inst[11 : 8], 1'b0};
 wire [`REG_BUS] immU = {{32{inst[31]}}, inst[31 : 12], 12'b0};
 wire [`REG_BUS] immJ = {{44{inst[31]}}, inst[19 : 12], inst[20], inst[30 : 21], 1'b0};
+wire [`REG_BUS] immCSR = {{59{1'b0}}, inst[19 : 15]};
 
 /* opcode */
 wire opcode_imm = (opcode == `OP_IMM) ? 1'b1 : 1'b0;
@@ -207,11 +208,12 @@ assign alu_op1_src = opcode_auipc | opcode_jal | opcode_jalr;	//1: pc; 0: reg
 assign alu_op2_src = ({2{opcode_lui | opcode_auipc | opcode_load | opcode_store | opcode_imm | opcode_imm32 | opcode_system | inst_csrrwi | inst_csrrsi | inst_csrrci}} & `OP2_IMM)
 					|({2{opcode_jal | opcode_jalr}} & `OP2_4)
 					|({2{opcode_op | opcode_op32 | opcode_branch}} & `OP2_REG);
-assign imm = ({64{opcode_lui | opcode_auipc | inst_csrrwi | inst_csrrsi | inst_csrrci}} & immU)
+assign imm = ({64{opcode_lui | opcode_auipc}} & immU)
 			|({64{opcode_jal}} 				& immJ)
 			|({64{opcode_branch}} 			& immB)
 			|({64{opcode_jalr | opcode_load | opcode_imm | opcode_imm32}} & immI)
-			|({64{opcode_store}} & immS);
+			|({64{opcode_store}} & immS)
+			|({64{inst_csrrwi | inst_csrrsi | inst_csrrci}} & immCSR);
 
 /* alu_op */
 wire alu_add = inst_add | inst_addi | opcode_store | opcode_load | opcode_auipc
