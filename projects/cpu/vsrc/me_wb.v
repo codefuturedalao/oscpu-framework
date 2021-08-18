@@ -74,7 +74,7 @@ always
 					wb_inst <= me_inst;
 					wb_inst_valid <= me_inst_valid;
 					wb_csr_rena <= me_csr_rena;
-					wb_csr_wena <= me_csr_rena;
+					wb_csr_wena <= me_csr_wena;
 					wb_csr_op <= me_csr_op;
 					wb_new_rs1_data <= me_new_rs1_data;
 					wb_exception_flag <= me_exception_flag;
