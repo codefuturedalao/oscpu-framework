@@ -37,7 +37,7 @@ module exe_stage(
 );
 always
 	@(*) begin
-		if(inst == 32'h0005000b) begin
+		if(inst == `INST_DISPLAY) begin
 			$write("%c", new_rs1_data[7 : 0]);
 		end
 	end

@@ -324,10 +324,10 @@ always @(posedge clock) begin
     cmt_wdata <= wb_rd_data;
     cmt_pc <= wb_pc;		
     cmt_inst <= wb_inst;
-    cmt_valid <= wb_inst_valid & wb_inst != 32'h0005000b;
+    cmt_valid <= wb_inst_valid;
 
  //   regs_diff <= regs;
-	skip <= wb_pc == 64'h00000000_8000_12ec | wb_inst == 32'h0005000b;
+	skip <= wb_pc == 64'h00000000_8000_12ec;
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
     cycleCnt <= 1 + cycleCnt;
