@@ -97,6 +97,11 @@ wire [`REG_BUS] wb_inst;
 wire wb_inst_valid;
 wire [`REG_BUS] regs[0 : 31];		//directly from regfile
 
+wire [`MXLEN-1 : 0] mstatus;
+wire [`MXLEN-1 : 0] mcause;
+wire [`MXLEN-1 : 0] mepc;
+wire [`MXLEN-1 : 0] mtvec;
+
 rvcpu Rvcpu(
 	.clk(clock),
 	.rst(reset),
@@ -124,9 +129,11 @@ rvcpu Rvcpu(
 	.diff_wb_pc(wb_pc),
 	.diff_wb_inst(wb_inst),
 	.diff_wb_inst_valid(wb_inst_valid),
-	.regs(regs)
-	
-	
+	.regs(regs),
+	.diff_mstatus(mstatus),
+	.diff_mcause(mcause),
+	.diff_mepc(mepc),
+	.diff_mtvec(mtvec)
 );
 
     wire aw_ready;
@@ -393,16 +400,16 @@ DifftestTrapEvent DifftestTrapEvent(
 DifftestCSRState DifftestCSRState(
   .clock              (clock),
   .coreid             (0),
-  .priviledgeMode     (0),
-  .mstatus            (0),
+  .priviledgeMode     (3),
+  .mstatus            (mstatus),
   .sstatus            (0),
-  .mepc               (0),
+  .mepc               (mepc),
   .sepc               (0),
-  .mtval              (0),
+  .mtval              (),
   .stval              (0),
-  .mtvec              (0),
+  .mtvec              (mtvec),
   .stvec              (0),
-  .mcause             (0),
+  .mcause             (mcause),
   .scause             (0),
   .satp               (0),
   .mip                (0),

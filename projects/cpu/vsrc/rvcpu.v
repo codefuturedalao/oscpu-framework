@@ -32,7 +32,12 @@ module rvcpu(
 	output wire [`REG_BUS] diff_wb_pc,
 	output wire [`REG_BUS] diff_wb_inst,
 	output wire diff_wb_inst_valid,
-	output wire [`REG_BUS] regs[0 : 31]
+	output wire [`REG_BUS] regs[0 : 31],
+
+	output wire [`MXLEN-1 : 0] diff_mstatus,
+	output wire [`MXLEN-1 : 0] diff_mcause,
+	output wire [`MXLEN-1 : 0] diff_mepc,
+	output wire [`MXLEN-1 : 0] diff_mtvec
 );
 
 // hazard_unit
@@ -631,7 +636,13 @@ csr Csr(
 
 	.csr_data(csr_data),
 	.exception_transfer(exception_transfer),
-	.exception_target_pc(exception_target_pc)
+	.exception_target_pc(exception_target_pc),
+
+	//difftest
+	.diff_mstatus(diff_mstatus),
+	.diff_mcause(diff_mcause),
+	.diff_mepc(diff_mepc),
+	.diff_mtvec(diff_mtvec)
 );
 
 

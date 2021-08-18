@@ -15,7 +15,12 @@ module csr(
 	
 	output wire [63 : 0] csr_data,
 	output wire exception_transfer,
-	output wire [`REG_BUS] exception_target_pc
+	output wire [`REG_BUS] exception_target_pc,
+
+	output wire [`MXLEN-1 : 0] diff_mstatus,
+	output wire [`MXLEN-1 : 0] diff_mcause,
+	output wire [`MXLEN-1 : 0] diff_mepc,
+	output wire [`MXLEN-1 : 0] diff_mtvec
 );
 	//TODO: i am not sure whether add 2'b00  is right or not
 	assign exception_target_pc = mcause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? {2'b00, mtvec[`MXLEN-1 : 2]} : 
@@ -220,5 +225,11 @@ module csr(
 					| {64{mtvec_ren}} & mtvec
 					| {64{mepc_ren}} & mepc
 					| {64{mcause_ren}} & mcause;
+
+	assign diff_mstatus = {{`MXLEN-13{1'b0}}, mstatus_pp, mstatus_pie, mstatus_ie};
+	assign diff_mtvec = mtvec;
+	assign diff_mcause = mcause;
+	assign diff_mepc = mepc;
+
 
 endmodule
