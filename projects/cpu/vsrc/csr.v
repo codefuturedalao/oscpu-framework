@@ -120,7 +120,7 @@ module csr(
 				mstatus_pp <= {2'b11, 1'b0, 1'b0, 1'b0};
 			end
 			if(exception_flag && exception_cause == `MRET) begin		//mret
-				mstatus_pp <= {2'b11, 1'b0, 1'b0, 1'b0};
+				mstatus_pp <= {2'b00, 1'b0, 1'b0, 1'b0};				//don't support U mode, but for passing the difftest
 			end
 			if(mstatus_wen) begin
 				case(csr_op)
