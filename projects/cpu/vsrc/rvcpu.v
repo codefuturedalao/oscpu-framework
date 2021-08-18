@@ -190,7 +190,7 @@ wire exception_transfer;
 wire ex_mem_rena;
 wire [4 : 0] ex_rd_waddr;
 wire [4 : 0] me_rd_waddr;
-wire control_transfer;
+//wire control_transfer;
 wire ex_csr_rena;
 wire me_csr_rena;
 wire if_stall_req;
@@ -215,16 +215,18 @@ hazard_unit Hazard_unit(
 	.branch(me_branch),
 	.jump(me_jump),
 	.b_flag(me_b_flag),
-	.exception_transfer(exception_transfer),
+	.exception_transfer_i(exception_transfer),
 	.control_target_pc_i(me_target_pc),
 	.exception_target_pc_i(exception_target_pc),
 	.if_stall_req(if_stall_req),
 	.exe_stall_req(exe_stall_req),
 	.mem_stall_req(mem_stall_req),
 	
-	.control_transfer(control_transfer),
+	.control_transfer_o(hazard_control_transfer),
+	.exception_transfer_o(hazard_exception_transfer),
 	.control_target_pc_o(hazard_control_target_pc),
 	.exception_target_pc_o(hazard_exception_target_pc),
+
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
 	.id_ex_stall(id_ex_stall),
@@ -417,7 +419,7 @@ booth2_mul Booth2_mul(
 */
 assign mul_result = {`ZERO_WORD, `ZERO_WORD};
 assign div_result = {`ZERO_WORD, `ZERO_WORD};
-assign div_ready;
+assign div_ready = 1'b1;
 /*
 wallace_mul Wallace_mul(
 	.rs1_sign(ex_rs1_sign),
@@ -522,12 +524,14 @@ ex_me Ex_me(
 );
 
 wire [`REG_BUS] exception_target_pc;
+wire hazard_control_transfer;
+wire hazard_exception_transfer;
 /* mem stage */
 pc_mux Pc_mux(
 	.old_pc(if_pc),	
-	.control_transfer(control_transfer),
+	.control_transfer(hazard_control_transfer),
 	.control_target_pc(hazard_control_target_pc),
-	.exception_transfer(exception_transfer),
+	.exception_transfer(hazard_exception_transfer),
 	.exception_target_pc(hazard_exception_target_pc),
 	
 	.new_pc(new_pc)
