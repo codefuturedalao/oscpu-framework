@@ -1,17 +1,15 @@
 `include "defines.v"
 module pc_mux(
 	input wire[`REG_BUS] old_pc,
-	input wire branch,
-	input wire jump,
-	input wire b_flag,
-	input wire [`REG_BUS] target_pc,
+	input wire control_transfer,
+	input wire [`REG_BUS] control_target_pc,
+	input wire exception_transfer,
+	input wire [`REG_BUS] exception_target_pc,
 
-	output wire transfer,
 	output reg[`REG_BUS] new_pc
 );
 	wire [`REG_BUS] result;
 	assign result = old_pc + 4;
-	assign transfer = (b_flag & branch) | jump;
-	assign new_pc = transfer == 1 ? target_pc : result;
+	assign new_pc = exception_transfer ? exception_target_pc : (control_transfer == 1 ? control_target_pc : result);
 
 endmodule

@@ -19,6 +19,8 @@ module me_wb(
 	input wire me_csr_wena,
 	input wire [1 : 0] me_csr_op,
 	input wire [`REG_BUS] me_new_rs1_data,
+	input wire me_exception_flag,
+	input wire [4 : 0] me_exception_cause,
 
 	output reg [`REG_BUS] wb_alu_result,	
 	output reg [`REG_BUS] wb_mem_data,
@@ -33,7 +35,9 @@ module me_wb(
 	output reg wb_csr_rena,
 	output reg wb_csr_wena,
 	output reg [1 : 0] wb_csr_op,
-	output reg [`REG_BUS] wb_new_rs1_data
+	output reg [`REG_BUS] wb_new_rs1_data,
+	output reg wb_exception_flag,
+	output reg [4 : 0] wb_exception_cause
 );
 
 always
@@ -53,6 +57,8 @@ always
 			wb_csr_wena <= 1'b0;
 			wb_csr_op <= 2'b00;
 			wb_new_rs1_data <= `ZERO_WORD;
+			wb_exception_flag <= 1'b0;
+			wb_exception_cause <= 5'b00000;
 		end
 		else begin
 			case(stall)
@@ -71,6 +77,8 @@ always
 					wb_csr_wena <= me_csr_rena;
 					wb_csr_op <= me_csr_op;
 					wb_new_rs1_data <= me_new_rs1_data;
+					wb_exception_flag <= me_exception_flag;
+					wb_exception_cause <= me_exception_cause;
 				end
 				`STALL_KEEP: begin
 				end
@@ -87,6 +95,8 @@ always
 					wb_inst_valid <= 1'b0;
 					wb_csr_rena <= 1'b0;
 					wb_csr_wena <= 1'b0;
+					wb_exception_flag <= 1'b0;
+					//wb_exception_cause <= 5'b00000;
 //					wb_csr_op <= 2'b00;
 //					wb_new_rs1_data <= `ZERO_WORD;
 				end
@@ -103,6 +113,8 @@ always
 					wb_inst_valid <= 1'b0;
 					wb_csr_rena <= 1'b0;
 					wb_csr_wena <= 1'b0;
+					wb_exception_flag <= 1'b0;
+					//wb_exception_cause <= 5'b00000;
 //					wb_csr_op <= 2'b00;
 //					wb_new_rs1_data <= `ZERO_WORD;
 				end

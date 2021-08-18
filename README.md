@@ -35,11 +35,9 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.14 : encapsulate the control logic and datapath in rvcpu module and provide necessary port to support difftest in SimTop module, that's also good for add axi interface in simtop
 
+2021.8.17 : Axi4 Bus completed
+
 ## DOING:
-* implement Axi Bus for accessing memory
-	* read the fucking manual
-	* draw status transfer graph
-	* code
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
 	* memory mask signal generate method				[done]
 	* regular the stall request signal and priority 	[done]

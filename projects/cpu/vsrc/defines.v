@@ -5,6 +5,7 @@
 `define ZERO_WORD  64'h00000000_00000000   
 `define REG_BUS    63 : 0     
 `define INST_BUS    31 : 0     
+`define MXLEN	   64
 
 `define AXI_ADDR_WIDTH      64
 `define AXI_DATA_WIDTH      64
@@ -168,3 +169,26 @@
 `define CSR_RW 2'b01
 `define CSR_RS 2'b10
 `define CSR_RC 2'b11
+
+`define CSR_CYCLE 12'hB00
+`define CSR_MSTATUS	12'h300
+`define CSR_MTVEC 12'h305
+`define CSR_MEPC  12'h341
+`define CSR_MCAUSE 12'h342
+
+`define INST_ADDR_MISALIGN 5'b0_0000
+`define INST_ACCESS_FAULT  5'b0_0001
+`define ILLEGAL_INST	   5'b0_0010
+`define BREAK_POINT		   5'b0_0011
+`define LOAD_ADDR_MISALIGN 5'b0_0100
+`define LOAD_ACCESS_FAULT  5'b0_0101
+`define STORE_ADDR_MISALIGN 5'b0_0110
+`define STORE_ACCESS_FAULT  5'b0_0111
+`define MRET				5'b0_1000
+`define SRET				5'b0_1001
+`define URET				5'b0_1010
+`define ECALL				5'b0_1011
+`define INST_PAGE_FAULT		5'b0_1100
+`define LOAD_PAGE_FAULT		5'b0_1101
+//reserved for furture standard use
+`define STORE_PAGE_FAULT	5'b0_1111

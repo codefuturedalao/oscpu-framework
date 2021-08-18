@@ -114,7 +114,9 @@ wire [4 : 0] id_rd_waddr;
 wire id_csr_rena;
 wire id_csr_wena;
 wire [1 : 0] id_csr_op;
-//wire [4 : 0] csr_uimm;
+
+wire id_exception_flag;
+wire [4 : 0] id_exception_cause;
 
 
 id_stage Id_stage(
@@ -144,7 +146,9 @@ id_stage Id_stage(
 	.mem_to_reg(id_mem_to_reg),
 	.csr_rena(id_csr_rena),
 	.csr_wena(id_csr_wena),
-	.csr_op(id_csr_op)
+	.csr_op(id_csr_op),
+	.exception_flag(id_exception_flag),
+	.exception_cause(id_exception_cause)
 );
 
 // wb_stage -> regfile
@@ -175,10 +179,11 @@ regfile Regfile(
   .regs_o(regs)
 );
 
+wire exception_transfer;
 wire ex_mem_rena;
 wire [4 : 0] ex_rd_waddr;
 wire [4 : 0] me_rd_waddr;
-wire transfer;
+wire control_transfer;
 wire ex_csr_rena;
 wire me_csr_rena;
 wire if_stall_req;
@@ -195,11 +200,15 @@ hazard_unit Hazard_unit(
 	.id_rs1_addr(id_rs1_raddr),
 	.id_rs2_rena(id_rs2_rena),
 	.id_rs2_addr(id_rs2_raddr),
-	.transfer(transfer),
+	.branch(me_branch),
+	.jump(me_jump),
+	.b_flag(me_b_flag),
+	.exception_transfer(exception_transfer),
 	.if_stall_req(if_stall_req),
 	.exe_stall_req(exe_stall_req),
 	.mem_stall_req(mem_stall_req),
 	
+	.control_transfer(control_transfer),
 	.pc_stall(pc_stall),
 	.if_id_stall(if_id_stall),
 	.id_ex_stall(id_ex_stall),
@@ -234,6 +243,9 @@ wire [1 : 0] ex_csr_op;
 wire ex_rs1_sign;
 wire ex_rs2_sign;
 
+wire ex_exception_flag;
+wire [4 : 0] ex_exception_cause;
+
 id_ex Id_ex(
 	.clk(clk),
 	.rst(rst),
@@ -265,6 +277,8 @@ id_ex Id_ex(
 	.id_csr_op(id_csr_op),
 	.id_rs1_sign(id_rs1_sign),
 	.id_rs2_sign(id_rs2_sign),
+	.id_exception_flag(id_exception_flag),
+	.id_exception_cause(id_exception_cause),
 
 	.ex_pc(ex_pc),
 	.ex_inst(ex_inst),
@@ -291,7 +305,9 @@ id_ex Id_ex(
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
 	.ex_rs1_sign(ex_rs1_sign),
-	.ex_rs2_sign(ex_rs2_sign)
+	.ex_rs2_sign(ex_rs2_sign),
+	.ex_exception_flag(ex_exception_flag),
+	.ex_exception_cause(ex_exception_cause)
 );
 
 /* exe stage */
@@ -421,6 +437,8 @@ wire me_inst_valid;
 //wire me_csr_rena;
 wire me_csr_wena;
 wire [1 : 0] me_csr_op;
+wire me_exception_flag;
+wire [4 : 0] me_exception_cause;
 
 ex_me Ex_me(
 	.clk(clk),
@@ -447,6 +465,8 @@ ex_me Ex_me(
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
+	.ex_exception_flag(ex_exception_flag),
+	.ex_exception_cause(ex_exception_cause),
 	
 	.me_target_pc(me_target_pc),
 	.me_branch(me_branch),
@@ -467,19 +487,21 @@ ex_me Ex_me(
 	.me_inst_valid(me_inst_valid),
 	.me_csr_rena(me_csr_rena),
 	.me_csr_wena(me_csr_wena),
-	.me_csr_op(me_csr_op)	
+	.me_csr_op(me_csr_op),
+	.me_exception_flag(me_exception_flag),
+	.me_exception_cause(me_exception_cause)
 
 );
 
+wire [`REG_BUS] exception_target_pc;
 /* mem stage */
 pc_mux Pc_mux(
 	.old_pc(if_pc),	
-	.branch(me_branch),
-	.jump(me_jump),
-	.b_flag(me_b_flag),
-	.target_pc(me_target_pc),
+	.control_transfer(control_transfer),
+	.control_target_pc(me_target_pc),
+	.exception_transfer(exception_transfer),
+	.exception_target_pc(exception_target_pc),
 	
-	.transfer(transfer),
 	.new_pc(new_pc)
 );
 
@@ -496,6 +518,10 @@ me_stage Me_stage(
 	.mem_data_read_i(mem_data_read),
 	.me_alu_result(me_alu_result),
 	.me_new_rs2_data(me_new_rs2_data),
+
+	//disable mem_valid signal
+	.me_exception_flag(me_exception_flag),
+	.wb_exception_flag(wb_exception_flag),
 	
 	
 	.mem_valid(mem_valid),
@@ -519,7 +545,10 @@ wire wb_inst_valid;
 wire wb_csr_rena;
 wire wb_csr_wena;
 wire [1 : 0] wb_csr_op;
+wire wb_rd_wena_normal;
 wire [`REG_BUS] wb_new_rs1_data;
+wire wb_exception_flag;
+wire [4 : 0] wb_exception_cause;
 
 me_wb Me_wb(
 	.clk(clk),
@@ -540,13 +569,15 @@ me_wb Me_wb(
 	.me_csr_wena(me_csr_wena),
 	.me_csr_op(me_csr_op),
 	.me_new_rs1_data(me_new_rs1_data),
+	.me_exception_flag(me_exception_flag),
+	.me_exception_cause(me_exception_cause),
 	
 	.wb_alu_result(wb_alu_result),
 	.wb_mem_data(wb_mem_data),
 	.wb_mem_to_reg(wb_mem_to_reg),
 	.wb_mem_ext_un(wb_mem_ext_un),
 	.wb_mem_byte_enable(wb_mem_byte_enable),
-	.wb_rd_wena(wb_rd_wena),
+	.wb_rd_wena(wb_rd_wena_normal),		//before exception
 	.wb_rd_waddr(wb_rd_waddr),
 	.wb_pc(wb_pc),
 	.wb_inst(wb_inst),
@@ -554,7 +585,9 @@ me_wb Me_wb(
 	.wb_csr_rena(wb_csr_rena),
 	.wb_csr_wena(wb_csr_wena),
 	.wb_csr_op(wb_csr_op),
-	.wb_new_rs1_data(wb_new_rs1_data)
+	.wb_new_rs1_data(wb_new_rs1_data),
+	.wb_exception_flag(wb_exception_flag),
+	.wb_exception_cause(wb_exception_cause)
 );
 
 /* wb stage */
@@ -574,8 +607,12 @@ rd_wmux Rd_wmux(
 	.mem_ext_un(wb_mem_ext_un),
 	.byte_enable(wb_mem_byte_enable),
 	.csr_rena(wb_csr_rena),
+	.rd_wena_i(wb_rd_wena_normal),
+	//disable rd_wena signal
+	.exception_flag(wb_exception_flag),
 	
-	.rd_wdata(wb_rd_data)
+	.rd_wdata(wb_rd_data),
+	.rd_wena_o(wb_rd_wena)
 );
 
 
@@ -588,7 +625,13 @@ csr Csr(
 	.csr_op(wb_csr_op),
 	.rs1_data(wb_new_rs1_data),
 
-	.csr_data(csr_data)
+	.exception_flag(wb_exception_flag),
+	.exception_cause(wb_exception_cause),
+	.epc(wb_pc),
+
+	.csr_data(csr_data),
+	.exception_transfer(exception_transfer),
+	.exception_target_pc(exception_target_pc)
 );
 
 

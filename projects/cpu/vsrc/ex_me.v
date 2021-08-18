@@ -27,6 +27,8 @@ module ex_me(
 	input wire ex_csr_rena,
 	input wire ex_csr_wena,
 	input wire [1 : 0] ex_csr_op,
+	input wire ex_exception_flag,
+	input wire [4 : 0] ex_exception_cause,
 
 	output reg [`REG_BUS] me_target_pc,
 	output reg me_branch,
@@ -49,7 +51,9 @@ module ex_me(
 	output reg me_inst_valid,
 	output reg me_csr_rena,
 	output reg me_csr_wena,
-	output reg [1 : 0] me_csr_op
+	output reg [1 : 0] me_csr_op,
+	output reg me_exception_flag,
+	output reg [4 : 0] me_exception_cause
 );
 
 always
@@ -79,6 +83,8 @@ always
 			me_csr_rena <= 1'b0;
 			me_csr_wena <= 1'b0;
 			me_csr_op <= 2'b00;
+			me_exception_flag <= 1'b0;
+			me_exception_cause <= 5'b00000;
 		end
 		else begin
 			case(stall)
@@ -107,6 +113,8 @@ always
 					me_csr_rena <= ex_csr_rena;
 					me_csr_wena <= ex_csr_wena;
 					me_csr_op <= ex_csr_op;
+					me_exception_flag <= ex_exception_flag;
+					me_exception_cause <= ex_exception_cause; 
 				end
 				`STALL_KEEP: begin
 				end
@@ -134,6 +142,8 @@ always
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;
+					me_exception_flag <= 1'b0;
+//					me_exception_cause <= 5'b00000;
 			//		me_csr_op <= 2'b00;
 				end
 				default: begin
@@ -160,6 +170,8 @@ always
 
 					me_csr_rena <= 1'b0;
 					me_csr_wena <= 1'b0;
+					me_exception_flag <= 1'b0;
+//					me_exception_cause <= 5'b00000;
 			//		me_csr_op <= 2'b00;
 				end
 			endcase

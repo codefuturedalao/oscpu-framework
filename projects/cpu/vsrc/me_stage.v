@@ -9,6 +9,8 @@ module me_stage(
 	input wire [`REG_BUS] mem_data_read_i,
 	input wire [`REG_BUS] me_alu_result,
 	input wire [`REG_BUS] me_new_rs2_data,
+	input wire me_exception_flag,
+	input wire wb_exception_flag,
 	
 	output wire mem_valid,
 	output wire mem_req,
@@ -22,7 +24,7 @@ module me_stage(
 assign mem_data_addr = me_alu_result;	
 assign mem_data_write = me_new_rs2_data;
 assign mem_data_read_o = mem_data_read_i;
-assign mem_valid = (me_mem_wena | me_mem_rena) & ~mem_ready;
+assign mem_valid = (me_mem_wena | me_mem_rena) & ~mem_ready & ~me_exception_flag & ~wb_exception_flag;
 assign mem_req = (me_mem_rena & `REQ_READ) | (me_mem_wena & `REQ_WRITE);
 assign mem_size = ({2{(mem_byte_enable == 8'b0000_0001)}} & `SIZE_B)
 				| ({2{(mem_byte_enable == 8'b0000_0011)}} & `SIZE_H)

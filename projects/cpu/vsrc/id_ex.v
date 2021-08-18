@@ -31,6 +31,8 @@ module id_ex(
 	input wire [1 : 0] id_csr_op,
 	input wire id_rs1_sign,
 	input wire id_rs2_sign,
+	input wire id_exception_flag,
+	input wire [4 : 0] id_exception_cause,
 
 	output reg [`REG_BUS] ex_pc,
 	output reg [`INST_BUS] ex_inst,
@@ -57,7 +59,9 @@ module id_ex(
 	output reg ex_csr_wena,
 	output reg [1 : 0] ex_csr_op,
 	output reg ex_rs1_sign,
-	output reg ex_rs2_sign
+	output reg ex_rs2_sign,
+	output reg ex_exception_flag,
+	output reg [4 : 0] ex_exception_cause
 );
 
 always
@@ -89,6 +93,8 @@ always
 			ex_csr_op <= 2'b00;
 			ex_rs1_sign <= 1'b0;
 			ex_rs2_sign <= 1'b0;
+			ex_exception_flag <= 1'b0;
+			ex_exception_cause <= 5'b00000;
 		end	
 		else begin
 			case(stall)
@@ -119,6 +125,8 @@ always
 					ex_csr_op <= id_csr_op;
 					ex_rs1_sign <= id_rs1_sign;
 					ex_rs2_sign <= id_rs2_sign;
+					ex_exception_flag <= id_exception_flag;
+					ex_exception_cause <= id_exception_cause; 
 				end
 				`STALL_KEEP: begin
 				end
@@ -148,6 +156,8 @@ always
 					ex_inst_valid <= 1'b0;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
+					ex_exception_flag <= 1'b0;
+//					ex_exception_cause <= 5'b00000;
 				//	ex_csr_op <= 2'b00;
 				//	ex_rs1_sign <= 1'b0;
 				//	ex_rs2_sign <= 1'b0;
@@ -178,6 +188,9 @@ always
 					ex_inst_valid <= 1'b0;
 					ex_csr_rena <= 1'b0;
 					ex_csr_wena <= 1'b0;
+
+					ex_exception_flag <= 1'b0;
+//					ex_exception_cause <= 5'b00000;
 				//	ex_csr_op <= 2'b00;
 				//	ex_rs1_sign <= 1'b0;
 				//	ex_rs2_sign <= 1'b0;

@@ -8,8 +8,11 @@ module rd_wmux(
 	input wire mem_ext_un,
 	input wire [7 : 0] byte_enable,		//useless
 	input wire csr_rena,
+	input wire rd_wena_i,
+	input wire exception_flag,
 	
-	output reg [`REG_BUS] rd_wdata
+	output reg [`REG_BUS] rd_wdata,
+	output reg rd_wena_o
 );
 
 	//wire [`REG_BUS] mask;
@@ -40,4 +43,5 @@ module rd_wmux(
 							|{64{byte_enable == 8'b1111_1111}} & {mem_data_new[63 : 0]})	
 				 	 : alu_result;
 	
+	assign rd_wena_o = ~exception_flag & rd_wena_i;
 endmodule

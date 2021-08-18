@@ -35,7 +35,10 @@ module id_stage(
 	output wire mem_to_reg,
 	output wire csr_rena,
 	output wire csr_wena,
-	output wire [1 : 0] csr_op
+	output wire [1 : 0] csr_op,
+	
+	output wire exception_flag,
+	output wire [4 : 0] exception_cause
 );
 
 
@@ -142,6 +145,14 @@ wire inst_csrrwi = opcode_system & (func3 == `FUN3_CSRRWI);
 wire inst_csrrsi = opcode_system & (func3 == `FUN3_CSRRSI);
 wire inst_csrrci = opcode_system & (func3 == `FUN3_CSRRCI);
 
+//machine-mode privileged instruction
+wire inst_ecall = opcode_system & ~(|inst[31 : 7]);
+wire inst_ebreak = opcode_system & ~(|{inst[31 : 21] , inst[19 : 7]})  & inst[20];
+wire inst_mret = opcode_system & ~(|inst[19 : 7]) & (inst[24 : 20] == 5'b00010) & (inst[31 : 25] == 7'b0011000);
+wire inst_uret = opcode_system & ~(|inst[19 : 7]) & (inst[24 : 20] == 5'b00010) & (inst[31 : 25] == 7'b0001000);
+wire inst_sret = opcode_system & ~(|inst[19 : 7]) & (inst[24 : 20] == 5'b00010) & (inst[31 : 25] == 7'b0000000);
+wire inst_wfi = opcode_system & ~(|inst[19 : 7]) & (inst[24 : 20] == 5'b00101) & (inst[31 : 25] == 7'b0001000);
+
 // M extension
 wire inst_mul = opcode_op & (func3 == `FUN3_MUL) & (func7 == `FUN7_M);
 wire inst_mulh = opcode_op & (func3 == `FUN3_MULH) & (func7 == `FUN7_M);
@@ -172,6 +183,13 @@ assign byte_enable = ({8{inst_lb | inst_lbu | inst_sb}} & 8'b0000_0001)
 					|({8{inst_lh | inst_lhu | inst_sh}} & 8'b0000_0011)
 					|({8{inst_lw | inst_lwu | inst_sw}} & 8'b0000_1111)
 					|({8{inst_ld | inst_sd}} & 8'b1111_1111);
+
+assign exception_flag = inst_ecall | inst_ebreak | inst_mret | inst_uret | inst_sret;
+assign exception_cause = {5{inst_ecall}} & `ECALL
+					|	 {5{inst_mret}} & `MRET	
+					|	 {5{inst_sret}} & `URET	
+					|	 {5{inst_uret}} & `SRET	
+					|	 {5{inst_ebreak}} & `BREAK_POINT;
 
 
 assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
