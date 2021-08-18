@@ -41,7 +41,6 @@ module id_stage(
 	output wire [4 : 0] exception_cause
 );
 
-
 wire [6  : 0]opcode;
 wire [4  : 0]rd;
 wire [2  : 0]func3;

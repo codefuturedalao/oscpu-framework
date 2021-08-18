@@ -18,8 +18,8 @@ module csr(
 	output wire [`REG_BUS] exception_target_pc
 );
 	//TODO: i am not sure whether add 2'b00  is right or not
-	assign exception_target_pc = mtvec[1 : 0] == 2'b00 ? {2'b00, mtvec[`MXLEN-1 : 2]} : 
-				(exception_cause[4] == 1'b1 ? ({2'b00, mtvec[`MXLEN-1 : 2]} + {exception_cause[3 : 0], 2'b00}) : {2'b00, mtvec[`MXLEN-1 : 2]});
+	assign exception_target_pc = mcause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? {2'b00, mtvec[`MXLEN-1 : 2]} : 
+				(exception_cause[4] == 1'b1 ? ({2'b00, mtvec[`MXLEN-1 : 2]} + {exception_cause[3 : 0], 2'b00}) : {2'b00, mtvec[`MXLEN-1 : 2]}));
 
 	//TODO: what if interrupt with csrrw instruction??
 	reg [`REG_BUS] cycle;
