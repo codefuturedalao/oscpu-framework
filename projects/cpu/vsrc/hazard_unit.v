@@ -40,7 +40,7 @@ module hazard_unit(
 				exception_transfer_r <= 1'b0;
 			end
 			else if(if_stall_req == 1'b1 && exception_transfer) begin
-				exception_transfer_r <= exception_transer;
+				exception_transfer_r <= exception_transfer;
 			end
 			else if(if_stall_req == 1'b0) begin//pc=next
 				exception_transfer_r <= 1'b0;
