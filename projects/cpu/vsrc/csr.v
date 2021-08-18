@@ -25,7 +25,7 @@ module csr(
 );
 	//TODO: check mtvec align
 	assign exception_transfer = exception_flag;
-	assign exception_target_pc = mcause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? mtvec : 
+	assign exception_target_pc = exception_cause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? mtvec : 
 				(exception_cause[4] == 1'b1 ? (mtvec + {exception_cause[3 : 0], 2'b00}) : mtvec));
 
 	//TODO: what if interrupt with csrrw instruction??
