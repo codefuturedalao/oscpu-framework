@@ -23,10 +23,10 @@ module csr(
 	output wire [`MXLEN-1 : 0] diff_mepc,
 	output wire [`MXLEN-1 : 0] diff_mtvec
 );
-	//TODO: i am not sure whether add 2'b00  is right or not
+	//TODO: check mtvec align
 	assign exception_transfer = exception_flag;
-	assign exception_target_pc = mcause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? {2'b00, mtvec[`MXLEN-1 : 2]} : 
-				(exception_cause[4] == 1'b1 ? ({2'b00, mtvec[`MXLEN-1 : 2]} + {exception_cause[3 : 0], 2'b00}) : {2'b00, mtvec[`MXLEN-1 : 2]}));
+	assign exception_target_pc = mcause == `MRET ? mepc : (mtvec[1 : 0] == 2'b00 ? mtvec : 
+				(exception_cause[4] == 1'b1 ? (mtvec + {exception_cause[3 : 0], 2'b00}) : mtvec));
 
 	//TODO: what if interrupt with csrrw instruction??
 	reg [`REG_BUS] cycle;
