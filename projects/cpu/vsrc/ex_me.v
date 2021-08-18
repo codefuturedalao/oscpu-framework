@@ -16,7 +16,7 @@ module ex_me(
 	input wire ex_mem_to_reg,
 	input wire [7 : 0] ex_mem_byte_enable, 
 	input wire [`REG_BUS] ex_alu_result,
-	input wire [`REG_BUS] ex_new_rs1_data,
+//	input wire [`REG_BUS] ex_new_rs1_data,
 	input wire [`REG_BUS] ex_new_rs2_data,
 	/* for wb write register */	
 	input wire ex_rd_wena,
@@ -27,6 +27,7 @@ module ex_me(
 	input wire ex_csr_rena,
 	input wire ex_csr_wena,
 	input wire [1 : 0] ex_csr_op,
+	input wire [11 : 0] ex_csr_addr,
 	input wire ex_exception_flag,
 	input wire [4 : 0] ex_exception_cause,
 
@@ -41,7 +42,7 @@ module ex_me(
 	output reg me_mem_to_reg,
 	output reg [7 : 0] me_mem_byte_enable, 
 	output reg [`REG_BUS] me_alu_result,
-	output reg [`REG_BUS] me_new_rs1_data,
+	//output reg [`REG_BUS] me_new_rs1_data,
 	output reg [`REG_BUS] me_new_rs2_data,
 
 	output reg me_rd_wena,
@@ -52,6 +53,7 @@ module ex_me(
 	output reg me_csr_rena,
 	output reg me_csr_wena,
 	output reg [1 : 0] me_csr_op,
+	output reg [11 : 0] me_csr_addr,
 	output reg me_exception_flag,
 	output reg [4 : 0] me_exception_cause
 );
@@ -71,7 +73,7 @@ always
 
 			me_mem_byte_enable <= 8'b0;
 			me_alu_result <= `ZERO_WORD;
-			me_new_rs1_data <= `ZERO_WORD;
+			//me_new_rs1_data <= `ZERO_WORD;
 			me_new_rs2_data <= `ZERO_WORD;
 
 			me_rd_wena <= 1'b0;
@@ -83,6 +85,7 @@ always
 			me_csr_rena <= 1'b0;
 			me_csr_wena <= 1'b0;
 			me_csr_op <= 2'b00;
+			me_csr_addr <= 12'h000;
 			me_exception_flag <= 1'b0;
 			me_exception_cause <= 5'b00000;
 		end
@@ -101,7 +104,7 @@ always
 
 					me_mem_byte_enable <= ex_mem_byte_enable;
 					me_alu_result <= ex_alu_result;
-					me_new_rs1_data <= ex_new_rs1_data;
+					//me_new_rs1_data <= ex_new_rs1_data;
 					me_new_rs2_data <= ex_new_rs2_data;
 
 					me_rd_wena <= ex_rd_wena;
@@ -113,6 +116,7 @@ always
 					me_csr_rena <= ex_csr_rena;
 					me_csr_wena <= ex_csr_wena;
 					me_csr_op <= ex_csr_op;
+					me_csr_addr <= ex_csr_addr;
 					me_exception_flag <= ex_exception_flag;
 					me_exception_cause <= ex_exception_cause; 
 				end

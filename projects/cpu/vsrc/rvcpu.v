@@ -122,6 +122,7 @@ wire [1 : 0] id_csr_op;
 
 wire id_exception_flag;
 wire [4 : 0] id_exception_cause;
+wire [11 : 0] id_csr_addr;
 
 
 id_stage Id_stage(
@@ -152,6 +153,7 @@ id_stage Id_stage(
 	.csr_rena(id_csr_rena),
 	.csr_wena(id_csr_wena),
 	.csr_op(id_csr_op),
+	.csr_addr(id_csr_addr),
 	.exception_flag(id_exception_flag),
 	.exception_cause(id_exception_cause)
 );
@@ -245,6 +247,7 @@ wire [`ALU_OP_BUS] ex_alu_op;
 //wire ex_csr_rena;
 wire ex_csr_wena;
 wire [1 : 0] ex_csr_op;
+wire [11 : 0] ex_csr_addr;
 wire ex_rs1_sign;
 wire ex_rs2_sign;
 
@@ -280,6 +283,7 @@ id_ex Id_ex(
 	.id_csr_rena(id_csr_rena),
 	.id_csr_wena(id_csr_wena),
 	.id_csr_op(id_csr_op),
+	.id_csr_addr(id_csr_addr),
 	.id_rs1_sign(id_rs1_sign),
 	.id_rs2_sign(id_rs2_sign),
 	.id_exception_flag(id_exception_flag),
@@ -309,6 +313,7 @@ id_ex Id_ex(
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
+	.ex_csr_addr(ex_csr_addr),
 	.ex_rs1_sign(ex_rs1_sign),
 	.ex_rs2_sign(ex_rs2_sign),
 	.ex_exception_flag(ex_exception_flag),
@@ -321,7 +326,7 @@ wire [`REG_BUS] me_alu_result;
 
 // exe_stage -> mem stage
 wire ex_b_flag;
-wire [`REG_BUS] ex_new_rs1_data;	//for csr calculate
+wire [`REG_BUS] ex_new_rs1_data;	//for mul and div
 wire [`REG_BUS] ex_new_rs2_data;	//for store 
 wire [`REG_BUS] ex_target_pc;	//for branch and jump
 wire [`REG_BUS] ex_alu_result;
@@ -434,7 +439,7 @@ wire me_mem_ext_un;
 wire me_mem_to_reg;
 wire [7 : 0] me_mem_byte_enable; 
 //wire [`REG_BUS] me_alu_result;
-wire [`REG_BUS] me_new_rs1_data;
+//wire [`REG_BUS] me_new_rs1_data;
 wire [`REG_BUS] me_new_rs2_data;
 wire [`REG_BUS] me_pc;
 wire [`INST_BUS] me_inst;
@@ -442,6 +447,7 @@ wire me_inst_valid;
 //wire me_csr_rena;
 wire me_csr_wena;
 wire [1 : 0] me_csr_op;
+wire [11 : 0] me_csr_addr;
 wire me_exception_flag;
 wire [4 : 0] me_exception_cause;
 
@@ -460,7 +466,7 @@ ex_me Ex_me(
 	.ex_mem_to_reg(ex_mem_to_reg),
 	.ex_mem_byte_enable(ex_mem_byte_enable),
 	.ex_alu_result(ex_alu_result),
-	.ex_new_rs1_data(ex_new_rs1_data),
+	//.ex_new_rs1_data(ex_new_rs1_data),
 	.ex_new_rs2_data(ex_new_rs2_data),
 	.ex_rd_wena(ex_rd_wena),
 	.ex_rd_waddr(ex_rd_waddr),
@@ -470,6 +476,7 @@ ex_me Ex_me(
 	.ex_csr_rena(ex_csr_rena),
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
+	.ex_csr_addr(ex_csr_addr),
 	.ex_exception_flag(ex_exception_flag),
 	.ex_exception_cause(ex_exception_cause),
 	
@@ -483,7 +490,7 @@ ex_me Ex_me(
 	.me_mem_to_reg(me_mem_to_reg),
 	.me_mem_byte_enable(me_mem_byte_enable),
 	.me_alu_result(me_alu_result),
-	.me_new_rs1_data(me_new_rs1_data),
+	//.me_new_rs1_data(me_new_rs1_data),
 	.me_new_rs2_data(me_new_rs2_data),
 	.me_rd_wena(me_rd_wena),
 	.me_rd_waddr(me_rd_waddr),
@@ -493,6 +500,7 @@ ex_me Ex_me(
 	.me_csr_rena(me_csr_rena),
 	.me_csr_wena(me_csr_wena),
 	.me_csr_op(me_csr_op),
+	.me_csr_addr(me_csr_addr),
 	.me_exception_flag(me_exception_flag),
 	.me_exception_cause(me_exception_cause)
 
@@ -550,8 +558,9 @@ wire wb_inst_valid;
 wire wb_csr_rena;
 wire wb_csr_wena;
 wire [1 : 0] wb_csr_op;
+wire [11 : 0] wb_csr_addr;
 wire wb_rd_wena_normal;
-wire [`REG_BUS] wb_new_rs1_data;
+//wire [`REG_BUS] wb_new_rs1_data;
 wire wb_exception_flag;
 wire [4 : 0] wb_exception_cause;
 
@@ -573,7 +582,8 @@ me_wb Me_wb(
 	.me_csr_rena(me_csr_rena),
 	.me_csr_wena(me_csr_wena),
 	.me_csr_op(me_csr_op),
-	.me_new_rs1_data(me_new_rs1_data),
+	.me_csr_addr(me_csr_addr),
+	//.me_new_rs1_data(me_new_rs1_data),
 	.me_exception_flag(me_exception_flag),
 	.me_exception_cause(me_exception_cause),
 	
@@ -590,7 +600,8 @@ me_wb Me_wb(
 	.wb_csr_rena(wb_csr_rena),
 	.wb_csr_wena(wb_csr_wena),
 	.wb_csr_op(wb_csr_op),
-	.wb_new_rs1_data(wb_new_rs1_data),
+	.wb_csr_addr(wb_csr_addr),
+	//.wb_new_rs1_data(wb_new_rs1_data),
 	.wb_exception_flag(wb_exception_flag),
 	.wb_exception_cause(wb_exception_cause)
 );
@@ -624,11 +635,13 @@ rd_wmux Rd_wmux(
 csr Csr(
 	.clk(clk),
 	.rst(rst),
-	.csr_addr(wb_alu_result[11 : 0]),
+	//.csr_addr(wb_alu_result[11 : 0]),
+	.csr_addr(wb_csr_addr),
 	.csr_rena(wb_csr_rena),
 	.csr_wena(wb_csr_wena),
 	.csr_op(wb_csr_op),
-	.rs1_data(wb_new_rs1_data),
+	.csr_wdata(wb_alu_result),
+	//.rs1_data(wb_new_rs1_data),
 
 	.exception_flag(wb_exception_flag),
 	.exception_cause(wb_exception_cause),

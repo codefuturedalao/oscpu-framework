@@ -6,7 +6,8 @@ module csr(
 	input wire csr_rena,
 	input wire csr_wena,
 	input wire [1 : 0] csr_op,
-	input wire [63 : 0] rs1_data,
+	input wire [63 : 0] csr_wdata,
+//	input wire [63 : 0] rs1_data,
 
 	//exception
 	input wire exception_flag,
@@ -35,13 +36,13 @@ module csr(
 			if(cycle_wen) begin
 				case(csr_op)
 					`CSR_RW: begin
-						cycle <= rs1_data;
+						cycle <= csr_wdata;
 					end
 					`CSR_RS: begin
-						cycle <= rs1_data | cycle;
+						cycle <= csr_wdata | cycle;
 					end
 					`CSR_RC: begin
-						cycle <= ~rs1_data & cycle;
+						cycle <= ~csr_wdata & cycle;
 					end
 					default: begin
 						cycle <= cycle;
@@ -69,13 +70,13 @@ module csr(
 			else if(mstatus_wen) begin		//exception and mstatus_wen cannot happen in the meantime
 				case(csr_op)
 					`CSR_RW: begin
-						mstatus_ie <= {rs1_data[3], 1'b0, rs1_data[1 : 0]};
+						mstatus_ie <= {csr_wdata[3], 1'b0, csr_wdata[1 : 0]};
 					end
 					`CSR_RS: begin
-						mstatus_ie <= {rs1_data[3], 1'b0, rs1_data[1 : 0]} | mstatus_ie;
+						mstatus_ie <= {csr_wdata[3], 1'b0, csr_wdata[1 : 0]} | mstatus_ie;
 					end
 					`CSR_RC: begin
-						mstatus_ie <= ~{rs1_data[3], 1'b0, rs1_data[1 : 0]} & mstatus_ie;
+						mstatus_ie <= ~{csr_wdata[3], 1'b0, csr_wdata[1 : 0]} & mstatus_ie;
 					end
 					default: begin
 						mstatus_ie <= mstatus_ie;
@@ -96,13 +97,13 @@ module csr(
 			else if(mstatus_wen) begin
 				case(csr_op)
 					`CSR_RW: begin
-						mstatus_pie <= {rs1_data[7], 1'b0, rs1_data[5 : 4]};
+						mstatus_pie <= {csr_wdata[7], 1'b0, csr_wdata[5 : 4]};
 					end
 					`CSR_RS: begin
-						mstatus_pie <= {rs1_data[7], 1'b0, rs1_data[5 : 4]} | mstatus_pie;
+						mstatus_pie <= {csr_wdata[7], 1'b0, csr_wdata[5 : 4]} | mstatus_pie;
 					end
 					`CSR_RC: begin
-						mstatus_pie <= ~{rs1_data[7], 1'b0, rs1_data[5 : 4]} & mstatus_pie;
+						mstatus_pie <= ~{csr_wdata[7], 1'b0, csr_wdata[5 : 4]} & mstatus_pie;
 					end
 					default: begin
 						mstatus_pie <= mstatus_pie;
@@ -123,19 +124,23 @@ module csr(
 			if(mstatus_wen) begin
 				case(csr_op)
 					`CSR_RW: begin			//only suport M modes
-						mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= {rs1_data[7], 0, rs1_data[5 : 4]};
+						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
+						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pie <= {csr_wdata[7], 0, rs1_data[5 : 4]};
 					end
 					`CSR_RS: begin
-						mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= {rs1_data[7], 0, rs1_data[5 : 4]} | mstatus_pie;
+						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
+						//mstatus_pie <= {csr_wdata[7], 0, rs1_data[5 : 4]} | mstatus_pie;
 					end
 					`CSR_RC: begin
-						mstatus_pp <= {2'b11, 2'b00, 1'b0};
-						//mstatus_pie <= ~{rs1_data[7], 0, rs1_data[5 : 4]} & mstatus_pie;
+						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
+						//mstatus_pie <= ~{csr_wdata[7], 0, rs1_data[5 : 4]} & mstatus_pie;
 					end
 					default: begin
-						mstatus_pp <= {2'b11, 2'b00, 1'b0};
+						mstatus_pp <= {2'b00, 2'b00, 1'b0};
+						//mstatus_pp <= {2'b11, 2'b00, 1'b0};
 						//mstatus_pie <= mstatus_pie;
 					end
 				endcase
@@ -151,13 +156,13 @@ module csr(
 			if(mtvec_wen) begin
 				case(csr_op)
 					`CSR_RW: begin
-						mtvec <= rs1_data;
+						mtvec <= csr_wdata;
 					end
 					`CSR_RS: begin
-						mtvec <= rs1_data | mtvec;
+						mtvec <= csr_wdata | mtvec;
 					end
 					`CSR_RC: begin
-						mtvec <= ~rs1_data & mtvec;
+						mtvec <= ~csr_wdata & mtvec;
 					end
 					default: begin
 						mtvec <= mtvec;
@@ -177,13 +182,13 @@ module csr(
 			if(mepc_wen) begin
 				case(csr_op)
 					`CSR_RW: begin
-						mepc <= rs1_data;
+						mepc <= csr_wdata;
 					end
 					`CSR_RS: begin
-						mepc <= rs1_data | mepc;
+						mepc <= csr_wdata | mepc;
 					end
 					`CSR_RC: begin
-						mepc <= ~rs1_data & mepc;
+						mepc <= ~csr_wdata & mepc;
 					end
 					default: begin
 						mepc <= mepc;
@@ -205,13 +210,13 @@ module csr(
 			if(mcause_wen) begin
 				case(csr_op)
 					`CSR_RW: begin
-						mcause <= rs1_data;
+						mcause <= csr_wdata;
 					end
 					`CSR_RS: begin
-						mcause <= rs1_data | mcause;
+						mcause <= csr_wdata | mcause;
 					end
 					`CSR_RC: begin
-						mcause <= ~rs1_data & mcause;
+						mcause <= ~csr_wdata & mcause;
 					end
 					default: begin
 						mcause <= mcause;

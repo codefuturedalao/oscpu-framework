@@ -29,6 +29,7 @@ module id_ex(
 	input wire id_csr_rena,
 	input wire id_csr_wena,
 	input wire [1 : 0] id_csr_op,
+	input wire [11 : 0] id_csr_addr,
 	input wire id_rs1_sign,
 	input wire id_rs2_sign,
 	input wire id_exception_flag,
@@ -58,6 +59,7 @@ module id_ex(
 	output reg ex_csr_rena,
 	output reg ex_csr_wena,
 	output reg [1 : 0] ex_csr_op,
+	output reg [11 : 0] ex_csr_addr,
 	output reg ex_rs1_sign,
 	output reg ex_rs2_sign,
 	output reg ex_exception_flag,
@@ -91,6 +93,7 @@ always
 			ex_csr_rena <= 1'b0;
 			ex_csr_wena <= 1'b0;
 			ex_csr_op <= 2'b00;
+			ex_csr_addr <= 12'h000;
 			ex_rs1_sign <= 1'b0;
 			ex_rs2_sign <= 1'b0;
 			ex_exception_flag <= 1'b0;
@@ -123,6 +126,7 @@ always
 					ex_csr_rena <= id_csr_rena;
 					ex_csr_wena <= id_csr_wena;
 					ex_csr_op <= id_csr_op;
+					ex_csr_addr <= id_csr_addr;
 					ex_rs1_sign <= id_rs1_sign;
 					ex_rs2_sign <= id_rs2_sign;
 					ex_exception_flag <= id_exception_flag;

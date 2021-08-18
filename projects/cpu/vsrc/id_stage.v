@@ -36,6 +36,7 @@ module id_stage(
 	output wire csr_rena,
 	output wire csr_wena,
 	output wire [1 : 0] csr_op,
+	output wire [11 : 0] csr_addr,
 	
 	output wire exception_flag,
 	output wire [4 : 0] exception_cause
@@ -47,7 +48,7 @@ wire [2  : 0]func3;
 wire [6  : 0]func7;
 wire [4  : 0]rs1;
 wire [4  : 0]rs2;
-wire [11 : 0] csr_addr;
+//wire [11 : 0] csr_addr;
 
 assign opcode = inst[6  :  0];
 assign rd     = inst[11 :  7];
@@ -201,15 +202,15 @@ assign rs1_r_ena = opcode_jalr | opcode_branch | opcode_imm | opcode_imm32
 assign rs2_r_ena = opcode_branch | opcode_store | opcode_op | opcode_op32;
 assign rd_w_ena = opcode_lui | opcode_auipc | opcode_jal | opcode_jalr
 		| opcode_load | opcode_op | opcode_op32 | opcode_imm | opcode_imm32
-		| inst_csrrs | inst_csrrc | (inst_csrrw & |rd_w_addr);
+		| inst_csrrs | inst_csrrsi | inst_csrrc | inst_csrrci | (inst_csrrw & |rd_w_addr) | (inst_csrrwi & |rd_w_addr);
 assign alu_op1_src = opcode_auipc | opcode_jal | opcode_jalr;	//1: pc; 0: reg
-assign alu_op2_src = ({2{opcode_lui | opcode_auipc | opcode_load | opcode_store | opcode_imm | opcode_imm32 | opcode_system}} & `OP2_IMM)
+assign alu_op2_src = ({2{opcode_lui | opcode_auipc | opcode_load | opcode_store | opcode_imm | opcode_imm32 | opcode_system | inst_csrrwi | inst_csrrsi | inst_csrrci}} & `OP2_IMM)
 					|({2{opcode_jal | opcode_jalr}} & `OP2_4)
 					|({2{opcode_op | opcode_op32 | opcode_branch}} & `OP2_REG);
-assign imm = ({64{opcode_lui | opcode_auipc}} & immU)
+assign imm = ({64{opcode_lui | opcode_auipc | inst_csrrwi | inst_csrrsi | inst_csrrci}} & immU)
 			|({64{opcode_jal}} 				& immJ)
 			|({64{opcode_branch}} 			& immB)
-			|({64{opcode_jalr | opcode_load | opcode_imm | opcode_imm32 | opcode_system}} & immI)
+			|({64{opcode_jalr | opcode_load | opcode_imm | opcode_imm32}} & immI)
 			|({64{opcode_store}} & immS);
 
 /* alu_op */
@@ -224,7 +225,8 @@ wire alu_sll = inst_sll | inst_slli;
 wire alu_srl = inst_srl | inst_srli;
 wire alu_sra = inst_sra | inst_srai;
 wire alu_sub = inst_sub;
-wire alu_lui = inst_lui | opcode_system;		//csr need rs1 to be alu_result
+wire alu_lui = inst_lui | inst_csrrwi | inst_csrrsi | inst_csrrci;
+wire alu_csr = inst_csrrw | inst_csrrs | inst_csrrc;
 wire alu_beq = inst_beq;
 wire alu_bne = inst_bne;
 wire alu_blt = inst_blt;
@@ -245,7 +247,7 @@ wire alu_divw = inst_divw | inst_divuw;
 wire alu_remw = inst_remw | inst_remuw;
 //consider add another control signal that indicates 32 bits calculation
 //that can reduce the number of alu_xxx signal
-encoder32_5 Encoder32_5(.in({2'b0, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
+encoder32_5 Encoder32_5(.in({1'b0, alu_csr, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}), .out(alu_op));
 
 /* csr signal */
 wire [4 : 0] csr_uimm = rs1_r_addr;

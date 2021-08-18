@@ -53,7 +53,7 @@ op1_mux Op1_mux(.new_rs1_data(new_rs1_data), .pc(pc), .alu_op1_src(alu_op1_src),
 op2_mux Op2_mux(.new_rs2_data(new_rs2_data), .imm(imm), .alu_op2_src(alu_op2_src), .op2(op2));
 
 wire alu_add, alu_slt, alu_sltu, alu_xor, alu_or, alu_and, alu_sll, alu_srl, alu_sra, alu_sub, alu_lui, alu_beq, alu_bne, alu_blt;
-wire alu_bge, alu_bltu, alu_bgeu, alu_addw, alu_subw, alu_sllw, alu_srlw, alu_sraw;
+wire alu_bge, alu_bltu, alu_bgeu, alu_addw, alu_subw, alu_sllw, alu_srlw, alu_sraw, alu_csr;
 wire alu_mul, alu_mulh, alu_mulw, alu_div, alu_rem, alu_divw, alu_remw;
 //assign mul_valid = alu_mul | alu_mulh | alu_mulw;
 assign div_valid = alu_div | alu_divw | alu_rem | alu_remw;
@@ -61,7 +61,7 @@ assign div_32 = alu_divw | alu_remw;
 //assign stall_req = (mul_valid & ~mul_ready) | (div_valid & ~div_ready);
 assign stall_req = (div_valid & ~div_ready);
 
-decoder5_32 Decoder5_32(.in(alu_op), .out({2'b0, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}));
+decoder5_32 Decoder5_32(.in(alu_op), .out({1'b0, alu_csr, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}));
 
 /* add or sub */
 assign op1_add = op1;
@@ -95,6 +95,7 @@ assign alu_result = ({64{alu_add | alu_sub}} & result_add)
 				|   ({64{alu_srlw}} & {{32{srl_result32[31]}}, srl_result32[31:0]})
 				|   ({64{alu_sraw}} & {{32{sra_result32[31]}}, sra_result32[31:0]})
 				|	({64{alu_lui}}  & op2)
+				|	({64{alu_csr}}  & op1)
 				|	({64{alu_mul}}  & mul_result[63 : 0])
 				|	({64{alu_mulh}}  & mul_result[127 : 64])
 				|	({64{alu_mulw}}  & {{32{mul_result[31]}}, mul_result[31 : 0]})
