@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "defines.v"
+`define RISCV_M
 
 
 module rvcpu(
@@ -417,10 +418,8 @@ booth2_mul Booth2_mul(
 	.mul_result(mul_result)
 );
 */
-assign mul_result = {`ZERO_WORD, `ZERO_WORD};
-assign div_result = {`ZERO_WORD, `ZERO_WORD};
-assign div_ready = 1'b1;
-/*
+`ifdef RISCV_M
+
 wallace_mul Wallace_mul(
 	.rs1_sign(ex_rs1_sign),
 	.rs2_sign(ex_rs2_sign),
@@ -442,8 +441,15 @@ multiCycle_div MultiCycle_div(
 	.ready(div_ready),
 	.div_result(div_result)
 );
+
+`else 
+assign mul_result = {`ZERO_WORD, `ZERO_WORD};
+assign div_result = {`ZERO_WORD, `ZERO_WORD};
+assign div_ready = 1'b1;
+
+`endif
 	
-*/
+
 /* ex_me flip flop */
 wire [`REG_BUS] me_target_pc;
 wire me_branch;
