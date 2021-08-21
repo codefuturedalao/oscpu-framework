@@ -117,7 +117,7 @@ rvcpu Rvcpu(
 	.if_addr(if_addr),
 	.if_size(if_size),
 
-	.mem_rready(mem_wready),
+	.mem_rready(mem_rready),
 	.mem_wready(mem_wready),
 	.mem_rresp(mem_rresp),
 	.mem_wresp(mem_wresp),
