@@ -477,8 +477,8 @@ module axi_rw # (
     assign mem_rresp_o      = mem_rresp;
 
     reg mem_wready;
-    wire mem_wready_nxt = w_done;			//write or read
-    wire mem_wready_en  = w_done | mem_wready;
+    wire mem_wready_nxt = b_hs;			//write or read
+    wire mem_wready_en  = b_hs | mem_wready;
     always @(posedge clock) begin
         if (reset) begin
             mem_wready <= 0;
@@ -491,7 +491,7 @@ module axi_rw # (
 
     reg [1:0] mem_wresp;
     wire mem_wresp_nxt = axi_b_resp_i;
-    wire wresp_en = w_done;		
+    wire wresp_en = b_hs;		
     always @(posedge clock) begin
         if (reset) begin
             mem_wresp <= 0;
