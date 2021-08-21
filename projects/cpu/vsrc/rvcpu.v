@@ -572,7 +572,7 @@ me_stage Me_stage(
 	.mem_rvalid(mem_rvalid),
 	.mem_wvalid(mem_wvalid),
 	.mem_data_write(mem_data_write),
-	.mem_data_raddr(mem_waddr),
+	.mem_data_raddr(mem_raddr),
 	.mem_data_waddr(mem_waddr),
 	.mem_data_read_o(me_mem_rdata),
 	.mem_rsize(mem_rsize),
