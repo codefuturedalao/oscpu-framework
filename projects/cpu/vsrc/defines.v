@@ -19,6 +19,9 @@
 
 `define REQ_READ            1'b0
 `define REQ_WRITE           1'b1
+
+`define CHIP_EN 1'b0
+`define CHIP_DI 1'b1
 //`define INST_ADD   8'h11
 
 /* ----id stage---- */

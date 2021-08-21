@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "defines.v"
-`define RISCV_M
+//`define RISCV_M
 
 
 module rvcpu(
@@ -17,14 +17,19 @@ module rvcpu(
     output wire [1 : 0] if_size,
 
 	/* mem stage */
-	input wire mem_ready,
-	input wire [1 : 0] mem_resp,
+	input wire mem_rready,
+	input wire mem_wready,
+	input wire [1 : 0] mem_rresp,
+	input wire [1 : 0] mem_wresp,
 	input wire  [`REG_BUS]  mem_data_read,
-	output wire mem_valid,
-	output wire [1 : 0] mem_req,
-	output wire [`REG_BUS]  mem_addr, 
 	output wire  [`REG_BUS]  mem_data_write,
-	output wire [1 : 0]  mem_size, 
+	output wire mem_rvalid,
+	output wire mem_wvalid,
+	//output wire [1 : 0] mem_req,
+	output wire [`REG_BUS]  mem_raddr, 
+	output wire [`REG_BUS]  mem_waddr, 
+	output wire [1 : 0]  mem_rsize, 
+	output wire [1 : 0]  mem_wsize, 
 	
 
 	output wire diff_wb_rd_wena,
@@ -548,11 +553,13 @@ pc_mux Pc_mux(
 wire [`REG_BUS] me_mem_rdata;
 
 me_stage Me_stage(
-	.mem_ready(mem_ready),
+	.mem_rready(mem_rready),
+	.mem_wready(mem_wready),
 	.me_mem_wena(me_mem_wena),
 	.me_mem_rena(me_mem_rena),
 	.mem_byte_enable(me_mem_byte_enable),
-	.mem_resp(mem_resp),
+	.mem_rresp(mem_rresp),
+	.mem_wresp(mem_wresp),
 	.mem_data_read_i(mem_data_read),
 	.me_alu_result(me_alu_result),
 	.me_new_rs2_data(me_new_rs2_data),
@@ -562,12 +569,14 @@ me_stage Me_stage(
 	.wb_exception_flag(wb_exception_flag),
 	
 	
-	.mem_valid(mem_valid),
-	.mem_req(mem_req),
+	.mem_rvalid(mem_rvalid),
+	.mem_wvalid(mem_wvalid),
 	.mem_data_write(mem_data_write),
-	.mem_data_addr(mem_addr),
+	.mem_data_raddr(mem_waddr),
+	.mem_data_waddr(mem_waddr),
 	.mem_data_read_o(me_mem_rdata),
-	.mem_size(mem_size),
+	.mem_rsize(mem_rsize),
+	.mem_wsize(mem_wsize),
 	.stall_req(mem_stall_req)
 );
 

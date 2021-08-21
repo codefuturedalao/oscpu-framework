@@ -79,14 +79,18 @@ wire [1:0] if_size;
 wire [1:0] if_resp;
 
 /* from mem stage */
-wire mem_valid;
-wire mem_ready;
-wire mem_req;
+wire mem_rvalid;
+wire mem_wvalid;
+wire mem_rready;
+wire mem_wready;
 wire [63:0] mem_data_read;
 wire [63:0] mem_data_write;
-wire [63:0] mem_addr;
-wire [1:0] mem_size;
-wire [1:0] mem_resp;
+wire [63:0] mem_raddr;
+wire [63:0] mem_waddr;
+wire [1:0] mem_rsize;
+wire [1:0] mem_wsize;
+wire [1:0] mem_rresp;
+wire [1:0] mem_wresp;
 
 /* from wb stage */
 wire wb_rd_wena;
@@ -113,14 +117,19 @@ rvcpu Rvcpu(
 	.if_addr(if_addr),
 	.if_size(if_size),
 
-	.mem_ready(mem_ready),
-	.mem_resp(mem_resp),
+	.mem_rready(mem_wready),
+	.mem_wready(mem_wready),
+	.mem_rresp(mem_rresp),
+	.mem_wresp(mem_wresp),
 	.mem_data_read(mem_data_read),
-	.mem_valid(mem_valid),
-	.mem_req(mem_req),
-	.mem_addr(mem_addr),
+	.mem_rvalid(mem_rvalid),
+	.mem_wvalid(mem_wvalid),
+	//.mem_req(mem_req),
+	.mem_raddr(mem_raddr),
+	.mem_waddr(mem_waddr),
 	.mem_data_write(mem_data_write),
-	.mem_size(mem_size),
+	.mem_rsize(mem_rsize),
+	.mem_wsize(mem_wsize),
 
 	//difftest
 	.diff_wb_rd_wena(wb_rd_wena),
@@ -242,15 +251,23 @@ rvcpu Rvcpu(
         .inst_size_i                      (if_size),
         .inst_resp_o                      (if_resp),
 
-        .mem_valid_i                     (mem_valid),
-        .mem_ready_o                     (mem_ready),
-        .mem_req_i                       (mem_req),
+        .mem_rvalid_i                     (mem_rvalid),
+        .mem_rready_o                     (mem_rready),
+        //.mem_req_i                       (mem_req),
         .mem_data_read_o                    (mem_data_read),
-        .mem_data_write_i                   (mem_data_write),
-        .mem_addr_i                      (mem_addr),
-        .mem_size_i                      (mem_size),
-        .mem_resp_o                      (mem_resp),
+        //.mem_data_write_i                   (mem_data_write),
+        .mem_raddr_i                      (mem_raddr),
+        .mem_rsize_i                      (mem_rsize),
+        .mem_rresp_o                      (mem_rresp),
 
+        .mem_wvalid_i                     (mem_wvalid),
+        .mem_wready_o                     (mem_wready),
+        //.mem_req_i                       (mem_req),
+        //.mem_data_read_o                    (mem_data_read),
+        .mem_data_write_i                   (mem_data_write),
+        .mem_waddr_i                      (mem_waddr),
+        .mem_wsize_i                      (mem_wsize),
+        .mem_wresp_o                      (mem_wresp),
 	//axi signal
         .axi_aw_ready_i                 (aw_ready),
         .axi_aw_valid_o                 (aw_valid),
@@ -319,7 +336,7 @@ always @(posedge clock) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, trap, trap_code, cycleCnt, instrCnt} <= 0;
   end
   else begin
-    cmt_wen <= wb_rd_wena;	
+	cmt_wen <= wb_rd_wena;	
     cmt_wdest <= {3'd0, wb_rd_waddr};
     cmt_wdata <= wb_rd_data;
     cmt_pc <= wb_pc;		
