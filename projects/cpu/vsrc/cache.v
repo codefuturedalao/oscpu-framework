@@ -309,14 +309,14 @@ module cache #(
 	//miss
 	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
 											| {BLOCK_LEN{way_sel[1]}} & (way_data[1]);
-	wire [TAG_LEN - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
+	wire [TAG_LEN + 1 - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
 										|  {TAG_LEN{way_sel[1]}} & tag_dout[1];
 	wire [INDEX_LEN - 1 : 0] replace_index = request_buffer_index;
 	
 	parameter WAY_LEN = $clog2(WAY_NUM);
 	reg [WAY_LEN - 1 : 0] miss_buffer_replace_way;
 	reg [BLOCK_LEN - 1 : 0] miss_buffer_replace_data;
-	reg [TAG_LEN - 1 : 0] miss_buffer_replace_tag;
+	reg [TAG_LEN +1 - 1 : 0] miss_buffer_replace_tag;
 	reg [INDEX_LEN - 1 : 0] miss_buffer_replace_index;
 	reg [DATA_LEN - 1 : 0] miss_buffer_rdata;
 	always
@@ -324,7 +324,7 @@ module cache #(
 			if(rst == 1'b1) begin
 				miss_buffer_replace_way <= {WAY_LEN{1'b0}};
 				miss_buffer_replace_data <= {BLOCK_LEN{1'b0}};
-				miss_buffer_replace_tag <= {TAG_LEN{1'b0}};
+				miss_buffer_replace_tag <= {TAG_LEN + 1{1'b0}};
 				miss_buffer_replace_index <= {INDEX_LEN{1'b0}};
 			end
 			else if(hit == 1'b0 && m_state_lookup == 1'b1) begin
@@ -335,10 +335,10 @@ module cache #(
 			end
 		end
 	//replace
-	assign waxi_valid = m_state_replace;
+	assign waxi_valid = m_state_replace & miss_buffer_replace_tag[TAG_LEN];
 	assign waxi_data = miss_buffer_replace_data;
 	assign waxi_size = `SIZE_L;
-	assign waxi_addr = {miss_buffer_replace_tag, miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
+	assign waxi_addr = {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
 	//assign waxi_size = ;
 	//assign waxi_strb = ;
 	//refill
