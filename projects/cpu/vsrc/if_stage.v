@@ -100,7 +100,7 @@ always
 					end
 				end
 				W_OTHER: begin
-					if(data_hs == 1'b1) begin		//shake again, the data is from next instruction
+					if(stall == `STALL_KEEP && data_hs == 1'b1) begin		//shake again, the data is from next instruction
 						data_r_2 <= inst_data;
 						data_r_2_valid <= 1'b1;
 					end
@@ -108,7 +108,13 @@ always
 						state <= WORK;
 						pc <= new_pc;
 					end
-					else if(stall != `STALL_KEEP & data_r_2_valid == 1'b1) begin
+					else if(stall != `STALL_KEEP && data_r_2_valid == 1'b0 && data_hs == 1'b1) begin		//data_hs = 1 then valid cannot be 1
+						state <= W_ADDR;
+						pc <= new_pc;
+						data_r <= inst_data;
+						//data_r_2_valid <= 1'b0;
+					end
+					else if(stall != `STALL_KEEP && data_r_2_valid == 1'b1 && data_hs == 1'b0) begin 		//valid = 1 then data_hs cannot be 1
 						state <= W_ADDR;
 						pc <= new_pc;
 						data_r <= data_r_2;
