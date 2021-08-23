@@ -15,9 +15,9 @@ module rd_wmux(
 	output reg rd_wena_o
 );
 
-	//wire [`REG_BUS] mask;
+	wire [`REG_BUS] mask;
 	wire [`REG_BUS] mem_data_new;
-	/*assign mask = { {8{byte_enable[7]}},
+	assign mask = { {8{byte_enable[7]}},
                 {8{byte_enable[6]}},
                 {8{byte_enable[5]}},
                 {8{byte_enable[4]}},
@@ -28,8 +28,9 @@ module rd_wmux(
 	
 	
 	wire [5 : 0] shift_bit = {alu_result[2:0], 3'b000};
-	*/
-	assign mem_data_new = mem_data;
+	
+	//assign mem_data_new = mem_data;
+	assign mem_data_new = (mem_data >> shift_bit);
 
 	//load or other
 	assign rd_wdata = csr_rena   ? csr_data :
