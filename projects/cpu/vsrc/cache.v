@@ -342,13 +342,13 @@ module cache #(
 	//assign waxi_size = ;
 	//assign waxi_strb = ;
 	//refill
-	assign raxi_valid = m_state_refill;
+	assign raxi_valid = m_state_refill & ~raxi_dlast;
 	assign raxi_size = `SIZE_L;
 	assign raxi_addr = {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}};
 
 	reg [2 : 0]  counter;
     wire counter_rst = rst | ~m_state_refill;		//
-    wire counter_incr_en    = (counter != BANK_NUM_PER_WAY) & (raxi_valid & raxi_dvalid); //incre in every data transfer
+    wire counter_incr_en    = (counter != BANK_NUM_PER_WAY) & (raxi_dvalid); //incre in every data transfer
     always @(posedge clk) begin
         if (counter_rst) begin
             counter <= 0;
