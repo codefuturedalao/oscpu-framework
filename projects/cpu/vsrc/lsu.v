@@ -26,7 +26,7 @@ module lsu(
 	output wire me_stall_req,
 	output wire me_req_valid,
 	output wire me_req_op,
-	output wire me_addr,
+	output wire [`REG_BUS] me_addr,
 	output wire [7 : 0] me_wstrb,
 	output wire	[`REG_BUS] me_wdata,
 	output wire [`REG_BUS] mem_data_read_o
