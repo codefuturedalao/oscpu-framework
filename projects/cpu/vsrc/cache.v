@@ -342,7 +342,8 @@ module cache #(
 	//assign waxi_size = ;
 	//assign waxi_strb = ;
 	//refill
-	assign raxi_valid = m_state_refill & ~raxi_dlast;
+	//assign raxi_valid = m_state_refill & ~raxi_dlast;
+	assign raxi_valid = m_state_refill & ~raxi_dlast & (counter != WAY_NUM);
 	assign raxi_size = `SIZE_L;
 	assign raxi_addr = {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}};
 
