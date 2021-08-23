@@ -412,7 +412,7 @@ module cache #(
 
 	/*  output signal   */
 	assign addr_ok = m_state_idle | (m_state_lookup && hit && req_valid == 1'b1 && conflict == 1'b0);
-	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[3] + 1);
+	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[3] + 1 & request_buffer_op == 1'b0);
 	//assign rdata = {64{rhit}} & hit_data | miss_buffer_rdata;		//TODO
 	assign rdata = rhit ?  hit_data : miss_buffer_rdata;		//cannot keep
 
