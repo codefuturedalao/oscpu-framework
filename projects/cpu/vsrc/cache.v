@@ -115,7 +115,7 @@ module cache #(
 						m_state <= M_STATE_REFILL;	//keep 1 cycle
 					end
 					M_STATE_REFILL:	
-						if(raxi_done == 1'b1) begin
+						if(counter == WAY_NUM) begin
 							m_state <= M_STATE_IDLE;
 						end
 					default: begin end
