@@ -10,26 +10,30 @@ module rvcpu(
 
 	/* if stage */
 	input wire if_ready,
+	input wire if_dvalid,
+	input wire if_dlast,
     input wire [1 : 0] if_resp,
     input wire [`REG_BUS] if_data_read,
     output wire if_valid,
     output wire [`REG_BUS] if_addr,
-    output wire [1 : 0] if_size,
+    output wire [2 : 0] if_size,
 
 	/* mem stage */
 	input wire mem_rready,
-	input wire mem_wready,
+	input wire mem_dvalid,
+	input wire mem_dlast,
 	input wire [1 : 0] mem_rresp,
 	input wire [1 : 0] mem_wresp,
 	input wire  [`REG_BUS]  mem_data_read,
 	output wire  [`REG_BUS]  mem_data_write,
 	output wire mem_rvalid,
 	output wire mem_wvalid,
+	input wire mem_wready,
 	//output wire [1 : 0] mem_req,
 	output wire [`REG_BUS]  mem_raddr, 
 	output wire [`REG_BUS]  mem_waddr, 
-	output wire [1 : 0]  mem_rsize, 
-	output wire [1 : 0]  mem_wsize, 
+	output wire [2 : 0]  mem_rsize, 
+	output wire [2 : 0]  mem_wsize, 
 	
 
 	output wire diff_wb_rd_wena,
@@ -56,27 +60,66 @@ wire [1 : 0] me_wb_stall;
 
 /* if stage */
 wire [`REG_BUS] new_pc;
+wire [`REG_BUS] pc_minus_4;
 wire [`REG_BUS] if_pc;
+wire [`REG_BUS] inst_addr;
 wire [`INST_BUS] if_inst;
 wire if_inst_valid;		
-assign if_pc = if_addr;
+assign if_pc = inst_addr;
 //wire inst_ena;
+wire if_req_valid;
+wire if_req_op;
+wire inst_data_ok;
+wire inst_addr_ok;
+wire [`REG_BUS] inst_data;
 
 if_stage If_stage(
   	.clk(clk),
   	.rst(rst),
-	.if_ready(if_ready),
-	.if_resp(if_resp),
-	.if_data_read(if_data_read),
 	.new_pc(new_pc),
 	.stall(pc_stall),
   
-	.if_valid(if_valid),
-	.if_size(if_size),
+	.inst_data_ok(inst_data_ok),
+	.inst_addr_ok(inst_addr_ok),
+	.inst_data(inst_data),
+
+	.pc_minus_4(pc_minus_4),
+	.if_req_valid(if_req_valid),
+	.if_req_op(if_req_op),
+  	.inst_addr(inst_addr),
 	.inst(if_inst),
 	.inst_valid(if_inst_valid),
-  	.inst_addr(if_addr),
 	.stall_req(if_stall_req)
+);
+
+cache ICache(
+	.clk(clk),
+	.rst(rst),
+	
+	.req_valid(if_req_valid),
+	.req_op(if_req_op),
+	.index(inst_addr[11 : 4]),
+	.tag(inst_addr[63 : 12]),
+	.offset(inst_addr[3 : 0]),
+	.wstrb(8'b0),
+	.wdata(64'b0),
+	.addr_ok(inst_addr_ok),
+	.data_ok(inst_data_ok),
+	.rdata(inst_data),
+
+	.raxi_valid(if_valid),
+	.raxi_size(if_size),
+	.raxi_addr(if_addr),
+	.raxi_dvalid(if_dvalid),
+	.raxi_dlast(if_dlast),
+	.raxi_data(if_data_read),
+	
+	.waxi_valid(),
+	.waxi_size(),
+	.waxi_addr(),
+	//.waxi_strb(),
+	.waxi_data(),
+	.waxi_ready(1'b1)
 );
 
 /* if_id flip flop */
@@ -382,6 +425,7 @@ exe_stage Exe_stage(
 	.alu_op1_src(ex_alu_op1_src),
 	.alu_op2_src(ex_alu_op2_src),
 	.imm(ex_imm),
+	.stall_req_i(exe_stall_req_lsu),
 	
 	.rs1_src(rs1_src),
 	.rs2_src(rs2_src),
@@ -400,13 +444,15 @@ exe_stage Exe_stage(
 	.div_valid(div_valid),
 	.div_32(div_32),
 
-	.stall_req(exe_stall_req),
+	.stall_req_o(exe_stall_req),
 	.new_rs1_data(ex_new_rs1_data),
 	.new_rs2_data(ex_new_rs2_data),
 	.alu_result(ex_alu_result),
 	.target_pc(ex_target_pc),
 	.b_flag(ex_b_flag)
 );
+
+
 //may be i can define a macro to use multicycle or singcycle
 /*
 
@@ -539,7 +585,7 @@ wire hazard_control_transfer;
 wire hazard_exception_transfer;
 /* mem stage */
 pc_mux Pc_mux(
-	.old_pc(if_pc),	
+	.old_pc(pc_minus_4),	
 	.control_transfer(hazard_control_transfer),
 	.control_target_pc(hazard_control_target_pc),
 	.exception_transfer(hazard_exception_transfer),
@@ -551,34 +597,103 @@ pc_mux Pc_mux(
 
 // Access memory
 wire [`REG_BUS] me_mem_rdata;
+wire mem_addr_ok;
+wire mem_data_ok;
+wire mem_req_valid;
+wire mem_req_op;
+wire [`REG_BUS] mem_addr;
+wire [7 : 0] mem_wstrb;
+wire [`REG_BUS] mem_wdata;
+wire exe_stall_req_lsu;
+lsu Lsu(
+	.clk(clk),
+	.rst(rst),
+	.ex_stall(id_ex_stall),
+	.me_stall(ex_me_stall),
 
-me_stage Me_stage(
-	.mem_rready(mem_rready),
-	.mem_wready(mem_wready),
-	.me_mem_wena(me_mem_wena),
-	.me_mem_rena(me_mem_rena),
-	.mem_byte_enable(me_mem_byte_enable),
-	.mem_rresp(mem_rresp),
-	.mem_wresp(mem_wresp),
-	.mem_data_read_i(mem_data_read),
-	.me_alu_result(me_alu_result),
-	.me_new_rs2_data(me_new_rs2_data),
-
-	//disable mem_valid signal
+	.ex_wstrb(ex_mem_byte_enable),
+	.ex_alu_result(ex_alu_result),
+	.ex_mem_wdata(ex_new_rs2_data),
+	.me_control_transfer(hazard_control_transfer),
+	.ex_exception_flag(ex_exception_flag),
 	.me_exception_flag(me_exception_flag),
 	.wb_exception_flag(wb_exception_flag),
+
+	.ex_mem_rena(ex_mem_rena),
+	.ex_mem_wena(ex_mem_wena),
+	.addr_ok(mem_addr_ok),
+	.data_ok(mem_data_ok),
+	.mem_data_read_i(me_mem_data_read),
 	
-	
-	.mem_rvalid(mem_rvalid),
-	.mem_wvalid(mem_wvalid),
-	.mem_data_write(mem_data_write),
-	.mem_data_raddr(mem_raddr),
-	.mem_data_waddr(mem_waddr),
-	.mem_data_read_o(me_mem_rdata),
-	.mem_rsize(mem_rsize),
-	.mem_wsize(mem_wsize),
-	.stall_req(mem_stall_req)
+	.ex_stall_req(exe_stall_req_lsu),
+	.me_stall_req(mem_stall_req),
+	.me_req_valid(mem_req_valid),
+	.me_req_op(mem_req_op),
+	.me_addr(mem_addr),
+	.me_wstrb(mem_wstrb),
+	.me_wdata(mem_wdata),
+	.mem_data_read_o(me_mem_rdata)
 );
+	
+wire [`REG_BUS] me_mem_data_read;
+cache DCache(
+	.clk(clk),
+	.rst(rst),
+	
+	.req_valid(mem_req_valid),
+	.req_op(mem_req_op),
+	.index(mem_addr[11 : 4]),
+	.tag(mem_addr[63 : 12]),
+	.offset(mem_addr[3 : 0]),
+	.wstrb(mem_wstrb),
+	.wdata(mem_wdata),
+	.addr_ok(mem_addr_ok),
+	.data_ok(mem_data_ok),
+	.rdata(me_mem_data_read),
+	
+	.raxi_valid(mem_rvalid),
+	.raxi_size(mem_rsize),
+	.raxi_addr(mem_raddr),
+	.raxi_dvalid(mem_dvalid),
+	.raxi_dlast(mem_dlast),
+	.raxi_data(mem_data_read),
+	
+	.waxi_valid(mem_wvalid),
+	.waxi_size(mem_wsize),
+	.waxi_addr(mem_waddr),
+	.waxi_data(mem_data_write),
+	.waxi_ready(mem_wready)
+	//.waxi_strb(
+);
+/*
+		me_stage Me_stage(
+			.mem_rready(mem_rready),
+			.mem_wready(mem_wready),
+			.me_mem_wena(me_mem_wena),
+			.me_mem_rena(me_mem_rena),
+			.mem_byte_enable(me_mem_byte_enable),
+			.mem_rresp(mem_rresp),
+			.mem_wresp(mem_wresp),
+			.mem_data_read_i(mem_data_read),
+			.me_alu_result(me_alu_result),
+			.me_new_rs2_data(me_new_rs2_data),
+
+			//disable mem_valid signal
+			.me_exception_flag(me_exception_flag),
+			.wb_exception_flag(wb_exception_flag),
+			
+			
+			.mem_rvalid(mem_rvalid),
+			.mem_wvalid(mem_wvalid),
+			.mem_data_write(mem_data_write),
+			.mem_data_raddr(mem_raddr),
+			.mem_data_waddr(mem_waddr),
+			.mem_data_read_o(me_mem_rdata),
+			.mem_rsize(mem_rsize),
+			.mem_wsize(mem_wsize),
+			.stall_req(mem_stall_req)
+		);
+*/
 
 /* me_wb flip flop */
 wire [`REG_BUS] wb_alu_result;	

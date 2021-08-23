@@ -8,6 +8,7 @@ module exe_stage(
 	input wire alu_op1_src,
 	input wire [1 : 0] alu_op2_src,
 	input wire [`REG_BUS] imm,
+	input wire stall_req_i,
 	
 	input wire [1 : 0] rs1_src,
 	input wire [1 : 0] rs2_src,
@@ -27,7 +28,7 @@ module exe_stage(
 //	output wire mul_valid,
 	output wire div_valid,
 	output wire div_32,
-	output wire stall_req,
+	output wire stall_req_o,
 	output wire [`REG_BUS] new_rs1_data,
 	output wire [`REG_BUS] new_rs2_data,
   	output wire [`REG_BUS] alu_result,
@@ -69,7 +70,11 @@ wire alu_mul, alu_mulh, alu_mulw, alu_div, alu_rem, alu_divw, alu_remw;
 assign div_valid = alu_div | alu_divw | alu_rem | alu_remw;
 assign div_32 = alu_divw | alu_remw;
 //assign stall_req = (mul_valid & ~mul_ready) | (div_valid & ~div_ready);
+`ifdef CACHE
+assign stall_req_o = stall_req_i;
+`else
 assign stall_req = (div_valid & ~div_ready);
+`endif
 
 decoder5_32 Decoder5_32(.in(alu_op), .out({1'b0, alu_csr, alu_remw, alu_divw, alu_rem, alu_div, alu_mulw, alu_mulh, alu_mul, alu_sraw, alu_srlw, alu_sllw, alu_subw, alu_addw, alu_bgeu, alu_bltu, alu_bge, alu_blt, alu_bne, alu_beq, alu_lui, alu_sub, alu_sra, alu_srl, alu_sll, alu_and, alu_or, alu_xor, alu_sltu, alu_slt, alu_add, 1'b0}));
 

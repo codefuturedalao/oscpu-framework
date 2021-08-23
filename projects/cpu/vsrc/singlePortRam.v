@@ -11,21 +11,21 @@ module singlePortRam #(
 	input wire cs_n,
 	input wire we,
 	//input wire [REG_WIDTH / 8  - 1] wstrb,
-	input wire [REG_WIDTH - 1] din,
+	input wire [REG_WIDTH - 1 : 0] din,
 	
-	output wire [REG_WIDTH - 1] dout
+	output wire [REG_WIDTH - 1 : 0] dout
 );
 
-	reg [`REG_WIDTH - 1] dout_r;	
+	reg [REG_WIDTH - 1 : 0] dout_r;	
 	assign dout = dout_r;
-	reg [REG_WIDTH] ram [REG_DEPTH];
+	reg [REG_WIDTH - 1 : 0] ram [REG_DEPTH - 1 : 0];
 
 	//write
 	always
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
 				for(integer i = 0; i < REG_DEPTH; i = i + 1) begin
-					ram[i] <= {REG_WIDTH{1'b0}};
+					ram[i] = {REG_WIDTH{1'b0}};
 				end 	
 			end
 			else if(~cs_n & we) begin
@@ -37,10 +37,10 @@ module singlePortRam #(
 	always
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
-				dout <= {REG_WIDTH{1'b0}};
+				dout_r <= {REG_WIDTH{1'b0}};
 			end
 			else if(~cs_n & we) begin
-				dout <= ram[addr];
+				dout_r <= ram[addr];
 			end
 		end
 

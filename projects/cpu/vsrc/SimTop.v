@@ -69,16 +69,20 @@ module SimTop(
 
 
 /* from if stage */
+wire if_dvalid;
+wire if_dlast;
 wire if_valid;
 wire if_ready;
 wire if_req = `REQ_READ;
 wire [63:0] if_data_read;
 //wire [63:0] data_write;
 wire [63:0] if_addr;
-wire [1:0] if_size;
+wire [2:0] if_size;
 wire [1:0] if_resp;
 
 /* from mem stage */
+wire mem_dvalid;
+wire mem_dlast;
 wire mem_rvalid;
 wire mem_wvalid;
 wire mem_rready;
@@ -87,8 +91,8 @@ wire [63:0] mem_data_read;
 wire [63:0] mem_data_write;
 wire [63:0] mem_raddr;
 wire [63:0] mem_waddr;
-wire [1:0] mem_rsize;
-wire [1:0] mem_wsize;
+wire [2:0] mem_rsize;
+wire [2:0] mem_wsize;
 wire [1:0] mem_rresp;
 wire [1:0] mem_wresp;
 
@@ -111,14 +115,21 @@ rvcpu Rvcpu(
 	.rst(reset),
 
 	.if_ready(if_ready),
+	.if_dvalid(if_dvalid),
+	.if_dlast(if_dlast),
 	.if_resp(if_resp),
 	.if_data_read(if_data_read),
 	.if_valid(if_valid),
 	.if_addr(if_addr),
 	.if_size(if_size),
 
+
 	.mem_rready(mem_rready),
 	.mem_wready(mem_wready),
+
+	.mem_dvalid(mem_dvalid),
+	.mem_dlast(mem_dlast),
+
 	.mem_rresp(mem_rresp),
 	.mem_wresp(mem_wresp),
 	.mem_data_read(mem_data_read),
@@ -244,6 +255,11 @@ rvcpu Rvcpu(
         .reset                          (reset),
 
         .inst_valid_i                     (if_valid),
+`ifdef CACHE
+		.inst_dvalid					  (if_dvalid),
+		.inst_dlast						  (if_dlast),
+`else
+`endif
         .inst_ready_o                     (if_ready),
         .inst_req_i                       (if_req),
         .inst_data_read_o                    (if_data_read),
@@ -252,18 +268,19 @@ rvcpu Rvcpu(
         .inst_resp_o                      (if_resp),
 
         .mem_rvalid_i                     (mem_rvalid),
+`ifdef CACHE
+		.mem_dvalid						  (mem_dvalid),
+		.mem_dlast						  (mem_dlast),
+`else
+`endif
         .mem_rready_o                     (mem_rready),
-        //.mem_req_i                       (mem_req),
         .mem_data_read_o                    (mem_data_read),
-        //.mem_data_write_i                   (mem_data_write),
         .mem_raddr_i                      (mem_raddr),
         .mem_rsize_i                      (mem_rsize),
         .mem_rresp_o                      (mem_rresp),
 
         .mem_wvalid_i                     (mem_wvalid),
         .mem_wready_o                     (mem_wready),
-        //.mem_req_i                       (mem_req),
-        //.mem_data_read_o                    (mem_data_read),
         .mem_data_write_i                   (mem_data_write),
         .mem_waddr_i                      (mem_waddr),
         .mem_wsize_i                      (mem_wsize),

@@ -49,7 +49,11 @@
 
 
 module axi_rw # (
-    parameter RW_DATA_WIDTH     = 64,
+`ifdef CACHE
+    parameter RW_DATA_WIDTH     = 128,		//block size !!!
+`else 
+    parameter RW_DATA_WIDTH     = 64,		//block size !!!
+`endif
     parameter RW_ADDR_WIDTH     = 64,
     parameter AXI_DATA_WIDTH    = 64,
     parameter AXI_ADDR_WIDTH    = 64,
@@ -62,25 +66,33 @@ module axi_rw # (
 	input                               inst_valid_i,
 	output                              inst_ready_o,
     input                               inst_req_i,
+`ifdef CACHE
+    output reg [AXI_DATA_WIDTH-1:0]        inst_data_read_o,
+	output reg							   inst_dvalid,
+	output reg							   inst_dlast,
+`else
     output reg [RW_DATA_WIDTH-1:0]        inst_data_read_o,
+`endif
     input  [AXI_DATA_WIDTH-1:0]           inst_addr_i,
     input  [1:0]                        inst_size_i,
     output [1:0]                        inst_resp_o,
 
 	
 	input                               mem_rvalid_i,
-	output                              mem_rready_o,
-    //input                               mem_req_i,		//read or write
+	output                              mem_rready_o,		//almost useless in cache
+`ifdef CACHE
+    output reg [AXI_DATA_WIDTH-1:0]        mem_data_read_o,
+	output reg							   mem_dvalid,
+	output reg							   mem_dlast,
+`else
     output reg [RW_DATA_WIDTH-1:0]        mem_data_read_o,
-    //input  [RW_DATA_WIDTH-1:0]            mem_data_write_i,
+`endif
     input  [AXI_DATA_WIDTH-1:0]           mem_raddr_i,
     input  [1:0]                        mem_rsize_i,
     output [1:0]                        mem_rresp_o,
 
 	input                               mem_wvalid_i,
-	output                              mem_wready_o,
-    //input                               mem_req_i,		//read or write
-    //output reg [RW_DATA_WIDTH-1:0]        mem_data_read_o,
+	output                              mem_wready_o,		//function changed in cache
     input  [RW_DATA_WIDTH-1:0]            mem_data_write_i,
     input  [AXI_DATA_WIDTH-1:0]           mem_waddr_i,
     input  [1:0]                        mem_wsize_i,
@@ -173,6 +185,14 @@ module axi_rw # (
             w_state <= R_STATE_IDLE;
         end
         else begin
+`ifdef CACHE
+                case (w_state)
+                    W_STATE_IDLE:  if (w_valid) w_state <= W_STATE_ADDR;
+                    W_STATE_ADDR:  if (aw_hs)   w_state <= W_STATE_WRITE;
+                    W_STATE_WRITE: if (w_done)  w_state <= W_STATE_RESP;
+                    W_STATE_RESP:  if (b_hs)    w_state <= W_STATE_IDLE;
+                endcase
+`else
             if (w_valid) begin
                 case (w_state)
                     W_STATE_IDLE:               w_state <= W_STATE_ADDR;
@@ -181,6 +201,7 @@ module axi_rw # (
                     W_STATE_RESP:  if (b_hs)    w_state <= W_STATE_IDLE;
                 endcase
             end
+`endif
         end
     end
 
@@ -326,6 +347,7 @@ module axi_rw # (
     wire inst_size_h             = inst_size_i == `SIZE_H;
     wire inst_size_w             = inst_size_i == `SIZE_W;
     wire inst_size_d             = inst_size_i == `SIZE_D;
+	wire inst_size_l			 = inst_size_i == `SIZE_L;
     wire [3:0] inst_addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, inst_addr_i[ALIGNED_WIDTH-1:0]};
     wire [3:0] inst_addr_op2     = ({4{inst_size_b}} & {4'b0})
                                 | ({4{inst_size_h}} & {4'b1})
@@ -338,6 +360,7 @@ module axi_rw # (
     wire [7:0] inst_axi_len      = inst_aligned ? TRANS_LEN - 1 : {{7{1'b0}}, inst_overstep};
     wire [2:0] inst_axi_size     = AXI_SIZE[2:0];
     wire [AXI_ADDR_WIDTH-1:0] inst_axi_addr    = {inst_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
+
     wire [OFFSET_WIDTH-1:0] inst_aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {inst_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
     wire [OFFSET_WIDTH-1:0] inst_aligned_offset_h    = AXI_DATA_WIDTH - inst_aligned_offset_l;
     wire [MASK_WIDTH-1:0] inst_mask                  = (({MASK_WIDTH{inst_size_b}} & {{MASK_WIDTH-8{1'b0}}, 8'hff})
@@ -357,6 +380,7 @@ module axi_rw # (
     wire mem_rsize_h             = mem_rsize_i == `SIZE_H;
     wire mem_rsize_w             = mem_rsize_i == `SIZE_W;
     wire mem_rsize_d             = mem_rsize_i == `SIZE_D;
+    wire mem_rsize_l             = mem_rsize_i == `SIZE_L;
     wire [3:0] mem_raddr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, mem_raddr_i[ALIGNED_WIDTH-1:0]};
     wire [3:0] mem_raddr_op2     = ({4{mem_rsize_b}} & {4'b0})
                                 | ({4{mem_rsize_h}} & {4'b1})
@@ -388,6 +412,7 @@ module axi_rw # (
     wire mem_wsize_h             = mem_wsize_i == `SIZE_H;
     wire mem_wsize_w             = mem_wsize_i == `SIZE_W;
     wire mem_wsize_d             = mem_wsize_i == `SIZE_D;
+    wire mem_wsize_l             = mem_wsize_i == `SIZE_L;
     wire [3:0] mem_waddr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, mem_waddr_i[ALIGNED_WIDTH-1:0]};
     wire [3:0] mem_waddr_op2     = ({4{mem_wsize_b}} & {4'b0})
                                 | ({4{mem_wsize_h}} & {4'b1})
@@ -418,11 +443,6 @@ module axi_rw # (
     wire [AXI_DATA_WIDTH/8-1:0] mem_strb_l      = mem_strb << mem_waddr_i[ALIGNED_WIDTH-1 : 0]; 
     wire [AXI_DATA_WIDTH/8-1:0] mem_strb_h      = mem_strb >> (AXI_DATA_WIDTH/8 - mem_waddr_i[ALIGNED_WIDTH-1 : 0]);
 
-/*
-    wire [AXI_ID_WIDTH-1:0] mem_axi_id        = {{AXI_ID_WIDTH-1{1'b0}}, 1'b1};		//mem write and read use id 1
-    wire [AXI_USER_WIDTH-1:0] mem_axi_user    = {AXI_USER_WIDTH{1'b0}};
-*/
-
 
     reg inst_ready;
     wire inst_ready_nxt = inst_trans_done;			//only considerate read
@@ -436,6 +456,10 @@ module axi_rw # (
         end
     end
     assign inst_ready_o     = inst_ready;
+`ifdef
+	assign inst_dlast = inst_ready;
+`else
+`endif
 
     reg [1:0] inst_resp;
     wire inst_resp_nxt = axi_r_resp_i;
@@ -462,6 +486,10 @@ module axi_rw # (
         end
     end
     assign mem_rready_o     = mem_rready;
+`ifdef
+	assign mem_dlast = mem_rready;
+`else
+`endif
 
     reg [1:0] mem_rresp;
     wire mem_rresp_nxt = axi_r_resp_i;
@@ -487,7 +515,6 @@ module axi_rw # (
             mem_wready <= mem_wready_nxt;		//one cycle
         end
     end
-    assign mem_wready_o     = mem_wready;
 
     reg [1:0] mem_wresp;
     wire mem_wresp_nxt = axi_b_resp_i;
@@ -503,6 +530,12 @@ module axi_rw # (
     assign mem_wresp_o      = mem_wresp;
     // ------------------Write Transaction------------------
 	// Write address channel signals
+`ifdef CACHE
+	assign mem_wready_o		= w_state_idle;		//tell cache can write
+`else
+    assign mem_wready_o     = mem_wready;		
+`endif
+
 	assign axi_aw_valid_o 	= w_state_addr;
 	assign axi_aw_addr_o	= mem_axi_waddr;
     assign axi_aw_prot_o    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
@@ -518,14 +551,20 @@ module axi_rw # (
 	// Write Data channel signals	
 	assign axi_w_valid_o 	= w_state_write;
 	assign axi_w_id_o		= mem_axi_id;
-    //wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (axi_w_data_i & mask_l) >> aligned_offset_l;
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_i << mem_waligned_offset_l);
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_i >> mem_waligned_offset_h);
 
 	//actually no need to judge axi_w_valid_o signal;
+`ifdef CACHE
+	assign axi_w_data_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? mem_data_write_i[0 +: AXI_DATA_WIDTH]: mem_data_write_i[AXI_DATA_WIDTH +: AXI_DATA_WIDTH]) : {AXI_DATA_WIDTH{1'b0}};
+	assign axi_w_strb_o = axi_w_valid_o ? 8'b1111_1111  : {AXI_DATA_WIDTH/8{1'b0}};
+	assign axi_w_last_o = axi_w_valid_o ? (mem_wlen == mem_axi_wlen) : 1'b0;
+`else
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_i << mem_waligned_offset_l);
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_i >> mem_waligned_offset_h);
 	assign axi_w_data_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? axi_w_data_l : axi_w_data_h) : {AXI_DATA_WIDTH{1'b0}};
 	assign axi_w_strb_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? mem_strb_l : mem_strb_h) : {AXI_DATA_WIDTH/8{1'b0}};
 	assign axi_w_last_o = axi_w_valid_o ? (mem_wlen == mem_axi_wlen) : 1'b0;
+
+`endif
 
 	// Write Response channel signals
 	assign axi_b_ready_o = w_state_resp;
@@ -554,6 +593,39 @@ module axi_rw # (
 
 	//mux by id
 	//interleave enable
+
+`ifdef CACHE
+	/* inst */
+	always @(posedge clock) begin
+		if (reset) begin
+			inst_data_read_o[0 +:AXI_DATA_WIDTH] <= 0;
+			inst_dvalid <= 1'b0;
+		end
+		else if (r_hs && axi_r_id_i == inst_axi_id) begin
+			inst_data_read_o[AXI_DATA_WIDTH-1:0] <= axi_r_data_i;
+			inst_dvalid <= 1'b1;
+		end
+		else begin
+			inst_data_read_o[0 +:AXI_DATA_WIDTH] <= 0;
+			inst_dvalid <= 1'b0;
+		end
+	end
+	/* mem */
+	always @(posedge clock) begin
+		if (reset) begin
+			mem_data_read_o[0 +:AXI_DATA_WIDTH] <= 0;
+			mem_dvalid <= 1'b0;
+		end
+		else if (r_hs && axi_r_id_i == mem_axi_id) begin
+			mem_data_read_o[AXI_DATA_WIDTH-1:0] <= axi_r_data_i;
+			mem_dvalid <= 1'b1;
+		end
+		else begin
+			mem_data_read_o[0 +:AXI_DATA_WIDTH] <= 0;
+			mem_dvalid <= 1'b0;
+		end
+	end
+`else
     wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (axi_r_id_i == inst_axi_id) ? ((axi_r_data_i & inst_mask_l) >> inst_aligned_offset_l) : ((axi_r_data_i & mem_rmask_l) >> mem_raligned_offset_l);
     wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (axi_r_id_i == inst_axi_id) ? ((axi_r_data_i & inst_mask_h) << inst_aligned_offset_h) : ((axi_r_data_i & mem_rmask_h) << mem_raligned_offset_h);
 	/* inst */
@@ -602,5 +674,6 @@ module axi_rw # (
             end
         end
     endgenerate
+`endif
 
 endmodule

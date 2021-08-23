@@ -3,61 +3,128 @@
 module if_stage(
   	input wire clk,
   	input wire rst,
-	input wire if_ready,
-	input wire [1 : 0] if_resp,
 	input wire [`REG_BUS] new_pc,
-  	input wire [`REG_BUS] if_data_read,
 	input wire [1 : 0] stall,
+
+	input wire inst_data_ok,
+	input wire inst_addr_ok,
+	input wire [`REG_BUS] inst_data,
   
-	output reg if_valid,
-	output wire [1 : 0] if_size,
-  	output wire [63 : 0] inst_addr,
-  	output reg [31:0] inst,
-	output reg inst_valid,
+	output wire [`REG_BUS] pc_minus_4,
+	output wire if_req_valid,
+	output wire if_req_op,
+  	output wire [`REG_BUS] inst_addr,
+  	output wire [`INST_BUS] inst,
+	output wire inst_valid,
  	output wire stall_req
 );
 
-reg inst_valid_r;
-reg if_valid_r;
-
-wire handshake_done = if_valid_r & if_ready;
-//assign if_valid = 1'b1;
-assign if_size = `SIZE_W;
-assign stall_req = if_valid_r & ~if_ready;		//TODO:
-assign inst = if_data_read[31 : 0];
-assign if_valid = if_valid_r & ~(inst_valid & (stall == `STALL_KEEP));
-assign inst_valid = (if_valid_r & if_ready) | inst_valid_r;
-
+assign pc_minus_4 = pc;
 reg [`REG_BUS] pc;
-
-// fetch an instruction
+/* state machine */
+parameter [2 : 0] ISSUE = 3'b000, WORK = 3'b001, W_ADDR = 3'b010, W_DATA = 3'b011, WAIT = 3'b100, W_OTHER = 3'b101;
+reg [2 : 0] state;
+wire state_issue = state == ISSUE, state_work = state == WORK, state_w_addr = state == W_ADDR, state_w_data = state == W_DATA, state_wait = state == WAIT, state_w_other = state == W_OTHER;
 always
 	@(posedge clk) begin
-  		if(rst == 1'b1) begin
-    		pc <= `PC_START;
-			if_valid_r <= 1'b1;
-			inst_valid_r <= 1'b0;
-  		end
- 		else begin
-			case(stall)
-				`STALL_NEXT: begin 
-					pc <= new_pc; 
-					if_valid_r <= 1'b1;
-					inst_valid_r <= 1'b0;
-				end
-				`STALL_KEEP: begin 
-					pc <= pc; 
-					if(handshake_done) begin
-						if_valid_r <= 1'b0;
-						inst_valid_r <= 1'b1;
+		if(rst == 1'b1) begin
+			state <= ISSUE;
+		end	
+		else begin
+			case(state)
+				ISSUE: begin				//first instruction
+					if(addr_hs == 1'b1) begin
+						state <= WORK;
+						pc <= new_pc;
 					end
 				end
-				`STALL_ZERO: begin pc <= `PC_START; end
-				default: begin pc <= `PC_START; end
+				WORK: begin
+					if(addr_hs == 1'b1 & data_hs == 1'b1 & stall != `STALL_KEEP) begin
+						state <= WORK;
+						pc <= new_pc;
+					end
+					else if(addr_hs == 1'b1 & data_hs == 1'b1 & stall == `STALL_KEEP) begin
+						state <= W_OTHER;	
+						data_r <= inst_data;
+					end
+					else if(addr_hs == 1'b1 && data_hs == 1'b0) begin
+						state <= W_DATA;
+					end
+					else if(addr_hs == 1'b0 && data_hs == 1'b1) begin
+						state <= W_ADDR;
+						data_r <= inst_data;
+					end
+					else if(addr_hs == 1'b0 && data_hs == 1'b0) begin
+						state <= WAIT;
+					end
+				end
+				W_DATA: begin
+					if(data_hs == 1'b1 && stall != `STALL_KEEP) begin
+						state <= WORK;
+						pc <= new_pc;
+					end
+					else if(data_hs == 1'b1 && stall == `STALL_KEEP) begin
+						state <= W_OTHER;
+						data_r <= inst_data;
+					end
+				end
+				W_ADDR: begin
+					if(addr_hs == 1'b1 && stall != `STALL_KEEP) begin
+						state <= WORK;
+						pc <= new_pc;
+					end
+					else if(addr_hs == 1'b1 && stall == `STALL_KEEP) begin
+						state <= W_OTHER;
+					end
+				end
+				WAIT: begin
+					if(addr_hs == 1'b1 && data_hs == 1'b1 && stall != `STALL_KEEP) begin
+						state <= WORK;
+						pc <= new_pc;
+					end
+					else if(addr_hs == 1'b1 && data_hs == 1'b1 && stall == `STALL_KEEP) begin
+						state <= W_OTHER;
+						data_r <= inst_data;
+					end
+					else if(addr_hs == 1'b0 && data_hs == 1'b1) begin
+						state <= W_ADDR;
+						data_r <= inst_data;
+					end
+					else if(addr_hs == 1'b1 && data_hs == 1'b0) begin
+						state <= W_ADDR;
+					end
+				end
+				W_OTHER: begin
+					if(stall != `STALL_KEEP) begin
+						state <= WORK;
+						pc <= new_pc;
+					end
+				end
+				default : state <= ISSUE;
 			endcase
-  		end
+		end
 	end
 
-assign inst_addr = pc;
+//reg addr_hs_r;
+reg [`REG_BUS] data_r;
+wire addr_hs = if_req_valid & inst_addr_ok;
+wire data_hs = inst_data_ok;
+//wire data_hs = addr_hs_r & data_ok;		//addr is ok, and next cycle data_ok
+assign if_req_op = 1'b0;
+assign if_req_valid = rst ? 1'b0 : (state_issue | state_work | state_w_addr | state_wait);
+assign inst_addr = new_pc;
+assign stall_req = rst ? 1'b0 : (state_issue) 
+				|  (state_work & (~addr_hs | ~data_hs)) 
+				|  (state_w_addr & ~addr_hs) 
+				|  (state_w_data & ~data_hs)
+				|  (state_wait & (~addr_hs | ~data_hs));
+wire [`REG_BUS] data = inst_data_ok ? inst_data : data_r;
+assign inst = inst_addr[2] ? data[63 : 32] : data[31 : 0];
+assign inst_valid = rst ? 1'b0 : 
+					(state_work & data_hs & addr_hs & stall != `STALL_KEEP)
+				|	(state_w_addr & addr_hs & stall != `STALL_KEEP)
+				|   (state_w_data & data_hs & stall != `STALL_KEEP)
+				|	(state_wait   & data_hs & addr_hs & stall != `STALL_KEEP)
+				|	(state_w_other & stall != `STALL_KEEP);
 
 endmodule

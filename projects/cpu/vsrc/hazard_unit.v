@@ -42,10 +42,14 @@ module hazard_unit(
 	reg control_transfer_r;
 	reg [`REG_BUS] control_target_pc_r;
 	reg [`REG_BUS] exception_target_pc_r;
-	assign control_transfer_o = (~if_stall_req & control_transfer) ? control_transfer : control_transfer_r;
+	/*assign control_transfer_o = (~if_stall_req & control_transfer) ? control_transfer : control_transfer_r;
 	assign exception_transfer_o = (~if_stall_req & exception_transfer_i) ? exception_transfer_i : exception_transfer_r;
 	assign control_target_pc_o = (~if_stall_req & control_transfer) ? control_target_pc_i : control_target_pc_r;
 	assign exception_target_pc_o = (~if_stall_req & exception_transfer_i) ? exception_target_pc_i : exception_target_pc_r;
+*/	assign control_transfer_o =  control_transfer | control_transfer_r;
+	assign exception_transfer_o = exception_transfer_i | exception_transfer_r;
+	assign control_target_pc_o =  control_target_pc_i | control_target_pc_r;
+	assign exception_target_pc_o = exception_target_pc_i | exception_target_pc_r;
 
 	always
     	@(posedge clk) begin

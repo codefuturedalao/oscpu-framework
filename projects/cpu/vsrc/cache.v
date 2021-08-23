@@ -26,7 +26,7 @@ module cache #(
 	output wire [DATA_LEN - 1 : 0] rdata,
 
 	output wire raxi_valid,
-	output wire raxi_size,
+	output wire [2 : 0] raxi_size,
 	output wire [`REG_BUS] raxi_addr,		//TODO physical address's width may not be 64
 //	input wire raxi_ready
 	input wire raxi_dvalid,
@@ -35,7 +35,7 @@ module cache #(
 	output wire waxi_valid,
 	output wire waxi_size,
 	output wire [`REG_BUS] waxi_addr,
-	output wire waxi_strb,
+//	output wire waxi_strb,
 	output wire [BLOCK_LEN - 1 : 0] waxi_data,		//TODO BLOCK_LEN define
 	input wire waxi_ready
 );
@@ -48,24 +48,24 @@ module cache #(
 	//Data table
 	generate
 			for(genvar i = 0;i < BANK_NUM ;i = i + 1) begin: DataTable
-				signalPortRam #(DATA_LEN, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(data_addr[i]), .cs_n(data_cs[i]), .we(data_we[i]), .din(data_din[i]), dout(data_dout[i]));
+				singlePortRam #(DATA_LEN, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(data_addr[i]), .cs_n(data_cs[i]), .we(data_we[i]), .din(data_din[i]), .dout(data_dout[i]));
 			end
 	endgenerate
 	//tag, v table
 	generate
 			for(genvar i = 0;i < WAY_NUM ;i = i + 1) begin: TagTable
-				signalPortRam #(TAG_LEN + 1, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(tag_addr[i]), .cs_n(tag_cs[i]), .we(tag_we[i]), .din(tag_din[i]), dout(tag_dout[i]));
+				singlePortRam #(TAG_LEN + 1, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(tag_addr[i]), .cs_n(tag_cs[i]), .we(tag_we[i]), .din(tag_din[i]), .dout(tag_dout[i]));
 			end
 	endgenerate
 	//d table
 	generate
 			for(genvar i = 0;i < WAY_NUM ;i = i + 1) begin: DTable
-				signalPortRam #(1, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(), .cs_n(), .we(), .din(), dout());
+				singlePortRam #(1, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(dirty_addr[i]), .cs_n(dirty_cs[i]), .we(dirty_we[i]), .din(dirty_din[i]), .dout(dirty_dout[i]));
 			end
 	endgenerate
 
 	/*	input signal	*/
-	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && m_state_write && write_buffer_offset[3] == offset[3]);
+	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);
 	wire req_rvalid = req_valid & (req_op == 1'b0) & ~conflict;
 	wire req_wvalid = req_valid & (req_op == 1'b1) & ~conflict;	//no need to test conflict
 	wire raxi_done = raxi_dvalid & raxi_dlast;
@@ -77,8 +77,8 @@ module cache #(
 					  M_STATE_REPLACE = 3'b011, M_STATE_REFILL = 3'b100;	
 	parameter W_STATE_IDLE = 1'b0, W_STATE_WRITE = 1'b1;
 
-	wire m_state_idle = m_state == M_STATE_IDLE, m_state_lookup = m_state == M_STATE_LOOKUP, m_state_miss = m_state == M_STATE_MISS, m_state_replace = m_state == M_STATE_REPLACE, m_state = m_state == M_STATE_REFILL;
-	wire w_state_idle = w_state == W_STATE_IDLE, w_state_write == W_STATE_WRITE;
+	wire m_state_idle = m_state == M_STATE_IDLE, m_state_lookup = m_state == M_STATE_LOOKUP, m_state_miss = m_state == M_STATE_MISS, m_state_replace = m_state == M_STATE_REPLACE, m_state_refill = m_state == M_STATE_REFILL;
+	wire w_state_idle = w_state == W_STATE_IDLE, w_state_write = w_state == W_STATE_WRITE;
 	reg [2 : 0] m_state;
 	reg w_state;
 	always
@@ -118,7 +118,7 @@ module cache #(
 						if(raxi_done == 1'b1) begin
 							m_state <= M_STATE_IDLE;
 						end
-					default:
+					default: begin end
 				endcase
 			end
 		end
@@ -173,7 +173,7 @@ module cache #(
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_we
 				assign data_we[i] = (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1) & 1'b1 
-								 |  (w_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
+								 |  (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
 			end
 	endgenerate
 
@@ -181,11 +181,11 @@ module cache #(
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_addr
 				assign data_addr[i] = ({INDEX_LEN{((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1)))}} & index) 
 								| ({INDEX_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_index)
-								| ({INDEX_LEN{(w_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & miss_buffer_replace_index);
+								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & miss_buffer_replace_index);
 
 				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_wdata)
-								| ({DATA_LEN{(w_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (miss_buffer_offset[3] != (i & 1'b1)))}} & raxi_data)
-								| ({DATA_LEN{(w_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (miss_buffer_offset[3] == (i & 1'b1)))}} & request_buffer_wdata);
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (write_buffer_offset[3] != (i & 1'b1)))}} & raxi_data)
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (write_buffer_offset[3] == (i & 1'b1)))}} & request_buffer_wdata);
 			end
 	endgenerate
 	
@@ -242,7 +242,7 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_addr
 				assign dirty_addr[i] = w_state_write ? write_buffer_index : ((m_state_refill & raxi_dvalid & miss_buffer_replace_way == i) ? miss_buffer_replace_index : index);		
-				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i && request_buffer_op == 1'b1) ? 1'b1 : 1'b0;		//only write
+				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i && request_buffer_op == 1'b1)) ? 1'b1 : 1'b0;		//only write
 			end
 	endgenerate
 
@@ -254,7 +254,7 @@ module cache #(
 	reg [OFFSET_LEN - 1 : 0] request_buffer_offset;
 	reg [INDEX_LEN - 1 : 0] request_buffer_index;
 	always
-		@(posdege clk) begin
+		@(posedge clk) begin
 			if(rst == 1'b1) begin
 				request_buffer_tag <= {TAG_LEN{1'b0}};
 				request_buffer_op <= 1'b0;
@@ -290,24 +290,28 @@ module cache #(
 	wire whit = hit & request_buffer_op;
 	wire rhit = hit & ~request_buffer_op;
 	generate
-			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_addr
+			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: lookup_hit
 				assign way_hit[i] = (m_state_lookup && tag_dout[i][0 +: TAG_LEN] == request_buffer_tag && tag_dout[TAG_LEN] == 1'b1);
 				assign way_data[i] = {data_dout[(i << 1) + 1], data_dout[i << 1]};
 			end
 	endgenerate
 
 	//read hit, no other request, go to idle
-	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (way_data[offset[3] * 64 +: 64])
+	/*wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (way_data[offset[3] * 64 +: 64])
 				 					 | {64{way_hit[1]}} & (way_data[offset[3] * 64 +: 64]);
+*/
+	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (data_dout[{1'b0, offset[3]}])
+				 					 | {64{way_hit[1]}} & (data_dout[{1'b1, offset[3]}]);
 
 	//read hit and request valid, still lookup
 	//write hit, store info in write buffer
+	wire [1 : 0] way_sel = 2'b01;
 	//miss
-	assign [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
+	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
 											| {BLOCK_LEN{way_sel[1]}} & (way_data[1]);
-	assign [TAG_LEN - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
+	wire [TAG_LEN - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
 										|  {TAG_LEN{way_sel[1]}} & tag_dout[1];
-	assign [INDEX_LEN - 1 : 0] replace_index = request_buffer_index;
+	wire [INDEX_LEN - 1 : 0] replace_index = request_buffer_index;
 	
 	parameter WAY_LEN = $clog2(WAY_NUM);
 	reg [WAY_LEN - 1 : 0] miss_buffer_replace_way;
@@ -326,20 +330,20 @@ module cache #(
 			else if(hit == 1'b0 && m_state_lookup == 1'b1) begin
 				miss_buffer_replace_way <= way_sel;
 				miss_buffer_replace_data <= replace_data;
-				miss_buffer_replace_tag <=  replace_tag
+				miss_buffer_replace_tag <=  replace_tag;
 				miss_buffer_replace_index <= replace_index;
-			end
 			end
 		end
 	//replace
 	assign waxi_valid = m_state_replace;
 	assign waxi_data = miss_buffer_replace_data;
+	assign waxi_size = `SIZE_L;
 	assign waxi_addr = {miss_buffer_replace_tag, miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
 	//assign waxi_size = ;
 	//assign waxi_strb = ;
 	//refill
 	assign raxi_valid = m_state_refill;
-	assign raxi_size = ;
+	assign raxi_size = `SIZE_L;
 	assign raxi_addr = {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}};
 
 	reg [2 : 0]  counter;
@@ -365,14 +369,13 @@ module cache #(
 			end
 		end
 	//
-	assign 
 
 	/* Write State Transaction */
-	parameter WAY_LEN = $clog2(WAY_NUM);
+	//parameter WAY_LEN = $clog2(WAY_NUM);
 	reg [INDEX_LEN - 1 : 0] write_buffer_index;
 	reg [STRB_LEN - 1 : 0] write_buffer_strb;
-	reg [DATA_LEN - 1 : 0] write_buffer_data
-	reg [DATA_LEN - 1 : 0] write_buffer_rdata
+	reg [DATA_LEN - 1 : 0] write_buffer_data;
+	reg [DATA_LEN - 1 : 0] write_buffer_rdata;
 	reg [WAY_NUM - 1 : 0] write_buffer_wayhit;
 	reg [OFFSET_LEN - 1 : 0] write_buffer_offset;
 	
@@ -380,7 +383,7 @@ module cache #(
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
 					write_buffer_index <= {INDEX_LEN{1'b0}};
-					write_buffer_strb <= {STRB_LEN{1'b0};
+					write_buffer_strb <= {STRB_LEN{1'b0}};
 					write_buffer_data <= {DATA_LEN{1'b0}};
 					write_buffer_rdata <= {DATA_LEN{1'b0}};	
 					write_buffer_wayhit <= {WAY_NUM{1'b0}};
@@ -391,8 +394,8 @@ module cache #(
 					write_buffer_index <= request_buffer_index;
 					write_buffer_strb <= request_buffer_strb;
 					write_buffer_data <= request_buffer_data;
-					write_buffer_rdata <= hitdata;	
-					write_buffer_wayhit <= wayhit;
+					write_buffer_rdata <= hit_data;	
+					write_buffer_wayhit <= way_hit;
 					write_buffer_offset <= request_buffer_offset;
 				end
 			end
