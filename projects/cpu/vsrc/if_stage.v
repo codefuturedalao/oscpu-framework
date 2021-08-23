@@ -104,7 +104,7 @@ always
 						data_r_2 <= inst_data;
 						data_r_2_valid <= 1'b1;
 					end
-					if(stall != `STALL_KEEP && data_r_2_valid == 1'b0) begin
+					if(stall != `STALL_KEEP && data_r_2_valid == 1'b0 && data_hs == 1'b0) begin
 						state <= WORK;
 						pc <= new_pc;
 					end
