@@ -267,8 +267,8 @@ module cache #(
 				if(((m_state_lookup && hit) | m_state_idle) && (req_rvalid | req_wvalid)) begin		//what if miss
 					request_buffer_tag <= tag;
 					request_buffer_op <= req_op;
-					request_buffer_strb <= wstrb;
-					request_buffer_data <= wdata;
+					request_buffer_strb <= (wstrb << offset[2 : 0]);
+					request_buffer_data <= (wdata << (offset[2 : 0] << 3));
 					request_buffer_offset <= offset;
 					request_buffer_index <= index;
 				end
