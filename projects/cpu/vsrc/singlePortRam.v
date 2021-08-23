@@ -39,7 +39,7 @@ module singlePortRam #(
 			if(rst == 1'b1) begin
 				dout_r <= {REG_WIDTH{1'b0}};
 			end
-			else if(~cs_n & we) begin
+			else if(~cs_n & we == 1'0) begin
 				dout_r <= ram[addr];
 			end
 		end
