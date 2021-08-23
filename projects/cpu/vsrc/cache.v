@@ -291,7 +291,7 @@ module cache #(
 	wire rhit = hit & ~request_buffer_op;
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: lookup_hit
-				assign way_hit[i] = (m_state_lookup && tag_dout[i][0 +: TAG_LEN] == request_buffer_tag && tag_dout[TAG_LEN] == 1'b1);
+				assign way_hit[i] = (m_state_lookup && tag_dout[i][0 +: TAG_LEN] == request_buffer_tag && (tag_dout[i][TAG_LEN] == 1'b1));
 				assign way_data[i] = {data_dout[(i << 1) + 1], data_dout[i << 1]};
 			end
 	endgenerate
