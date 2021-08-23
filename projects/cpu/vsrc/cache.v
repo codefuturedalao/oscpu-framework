@@ -268,7 +268,7 @@ module cache #(
 					request_buffer_tag <= tag;
 					request_buffer_op <= req_op;
 					request_buffer_strb <= (wstrb << offset[2 : 0]);
-					request_buffer_data <= (wdata << (offset[2 : 0] << 3));
+					request_buffer_data <= (wdata << ({offset[2 : 0], 3'b000}));
 					request_buffer_offset <= offset;
 					request_buffer_index <= index;
 				end
