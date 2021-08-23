@@ -300,8 +300,8 @@ module cache #(
 	/*wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (way_data[offset[3] * 64 +: 64])
 				 					 | {64{way_hit[1]}} & (way_data[offset[3] * 64 +: 64]);
 */
-	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (data_dout[{1'b0, offset[3]}])
-				 					 | {64{way_hit[1]}} & (data_dout[{1'b1, offset[3]}]);
+	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (data_dout[{1'b0, request_buffer_offset[3]}])
+				 					 | {64{way_hit[1]}} & (data_dout[{1'b1, request_buffer_offset[3]}]);
 
 	//read hit and request valid, still lookup
 	//write hit, store info in write buffer
