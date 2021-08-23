@@ -456,7 +456,7 @@ module axi_rw # (
         end
     end
     assign inst_ready_o     = inst_ready;
-`ifdef
+`ifdef CACHE
 	assign inst_dlast = inst_ready;
 `else
 `endif
@@ -486,7 +486,7 @@ module axi_rw # (
         end
     end
     assign mem_rready_o     = mem_rready;
-`ifdef
+`ifdef CACHE
 	assign mem_dlast = mem_rready;
 `else
 `endif
