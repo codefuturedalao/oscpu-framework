@@ -28,6 +28,9 @@ wire state_issue = state == ISSUE, state_work = state == WORK, state_w_addr = st
 always
 	@(posedge clk) begin
 		if(rst == 1'b1) begin
+			data_r <= `ZERO_WORD;
+			data_r_2 <= `ZERO_WORD;
+			data_r_2_valid <= 1'b0;
 			state <= ISSUE;
 			pc <= `PC_START_MINUS4;
 		end	
@@ -79,6 +82,7 @@ always
 					end
 				end
 				WAIT: begin
+					//if(data_r_2_valid) data_r_2_valid <= 1'b0;
 					if(addr_hs == 1'b1 && data_hs == 1'b1 && stall != `STALL_KEEP) begin
 						state <= WORK;
 						pc <= new_pc;
@@ -96,9 +100,19 @@ always
 					end
 				end
 				W_OTHER: begin
-					if(stall != `STALL_KEEP) begin
+					if(data_hs == 1'b1) begin		//shake again, the data is from next instruction
+						data_r_2 <= inst_data;
+						data_r_2_valid <= 1'b1;
+					end
+					if(stall != `STALL_KEEP && data_r_2_valid == 1'b0) begin
 						state <= WORK;
 						pc <= new_pc;
+					end
+					else if(stall != `STALL_KEEP & data_r_2_valid == 1'b1) begin
+						state <= W_ADDR;
+						pc <= new_pc;
+						data_r <= data_r_2;
+						data_r_2_valid <= 1'b0;
 					end
 				end
 				default : state <= ISSUE;
@@ -106,13 +120,19 @@ always
 		end
 	end
 
+reg data_r_2_valid;
+reg [`REG_BUS] data_r_2;
 //reg addr_hs_r;
 reg [`REG_BUS] data_r;
 wire addr_hs = if_req_valid & inst_addr_ok;
 wire data_hs = inst_data_ok;
 //wire data_hs = addr_hs_r & data_ok;		//addr is ok, and next cycle data_ok
 assign if_req_op = 1'b0;
-assign if_req_valid = rst ? 1'b0 : (state_issue | state_work | state_w_addr | state_wait);
+assign if_req_valid = rst ? 1'b0 : 
+					(state_issue)
+				|	(state_work)
+				|	(state_w_addr) 
+				|	(state_wait);
 assign inst_addr = new_pc;
 assign stall_req = rst ? 1'b0 : (state_issue) 
 				|  (state_work & (~addr_hs | ~data_hs)) 
@@ -120,7 +140,6 @@ assign stall_req = rst ? 1'b0 : (state_issue)
 				|  (state_w_data & ~data_hs)
 				|  (state_wait & (~addr_hs | ~data_hs));
 wire [`REG_BUS] data = inst_data_ok ? inst_data : data_r;
-//assign inst = inst_addr[2] ? data[63 : 32] : data[31 : 0];
 assign inst = pc[2] ? data[63 : 32] : data[31 : 0];
 assign inst_valid = rst ? 1'b0 : 
 					(state_work & data_hs & addr_hs & stall != `STALL_KEEP)
