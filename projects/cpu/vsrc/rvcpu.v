@@ -762,7 +762,7 @@ assign diff_wb_rd_waddr = wb_rd_waddr;
 assign diff_wb_rd_data = wb_rd_data;
 assign diff_wb_pc = wb_pc;
 assign diff_wb_inst = wb_inst;
-assign diff_wb_inst_valid = wb_inst_valid;
+assign diff_wb_inst_valid = wb_inst_valid & (me_wb_stall == `STALL_NEXT);
 
 wire [63 : 0] csr_data;
 rd_wmux Rd_wmux(
