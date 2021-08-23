@@ -139,7 +139,7 @@ assign stall_req = rst ? 1'b0 : (state_issue)
 				|  (state_w_addr & ~addr_hs) 
 				|  (state_w_data & ~data_hs)
 				|  (state_wait & (~addr_hs | ~data_hs));
-wire [`REG_BUS] data = (state_w_other & inst_data_ok) ? inst_data : data_r;
+wire [`REG_BUS] data = (~state_w_other & inst_data_ok) ? inst_data : data_r;
 assign inst = pc[2] ? data[63 : 32] : data[31 : 0];
 assign inst_valid = rst ? 1'b0 : 
 					(state_work & data_hs & addr_hs & stall != `STALL_KEEP)
