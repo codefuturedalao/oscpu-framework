@@ -278,7 +278,7 @@ module cache #(
 	wire [DATA_LEN - 1 : 0] request_buffer_wdata;
 	generate
 		for(genvar i = 0; i < STRB_LEN; i++) begin
-			assign request_buffer_wdata[i * 8 +: 8] = request_buffer_strb[i] == 1 ? request_buffer_data[i * 8 +: 8] : raxi_data[i * 8 +: 8];
+			assign request_buffer_wdata[i * 8 +: 8] = (request_buffer_op & request_buffer_strb[i]) == 1 ? request_buffer_data[i * 8 +: 8] : raxi_data[i * 8 +: 8];
 		end
 	endgenerate
 
