@@ -27,8 +27,7 @@ module cache #(
 
 	output wire raxi_valid,
 	output wire [2 : 0] raxi_size,
-	output wire [`REG_BUS] raxi_addr,		//TODO physical address's width may not be 64
-//	input wire raxi_ready
+	output wire [`REG_BUS] raxi_addr,		//TODO physical address's width may not be 64 //	input wire raxi_ready
 	input wire raxi_dvalid,
 	input wire raxi_dlast,
 	input wire [DATA_LEN - 1 : 0] raxi_data,
@@ -411,7 +410,7 @@ module cache #(
 
 
 	/*  output signal   */
-	assign addr_ok = m_state_idle | (m_state_lookup && hit && req_valid == 1'b1 && conflict == 1'b0);
+	assign addr_ok = (m_state_idle & conflict == 1'b0) | (m_state_lookup && hit && req_valid == 1'b1 && conflict == 1'b0);
 	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[3] + 1 & request_buffer_op == 1'b0);
 	//assign rdata = {64{rhit}} & hit_data | miss_buffer_rdata;		//TODO
 	assign rdata = rhit ?  hit_data : miss_buffer_rdata;		//cannot keep
