@@ -179,7 +179,7 @@ module cache #(
 								 |  (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
 				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_strb
 								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & 8'b1111_1111)
-								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_strb);
+								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & 8'b1111_1111);
 			end
 	endgenerate
 
@@ -191,7 +191,7 @@ module cache #(
 
 				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_data)
 								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & raxi_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_data);
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_wdata);
 			end
 	endgenerate
 	
@@ -281,13 +281,13 @@ module cache #(
 			end
 		end
 
-	/*wire [DATA_LEN - 1 : 0] request_buffer_wdata;
+	wire [DATA_LEN - 1 : 0] request_buffer_wdata;
 	generate
 		for(genvar i = 0; i < STRB_LEN; i++) begin
 			assign request_buffer_wdata[i * 8 +: 8] = (request_buffer_op & request_buffer_strb[i]) == 1 ? request_buffer_data[i * 8 +: 8] : raxi_data[i * 8 +: 8];
 		end
 	endgenerate
-	*/
+	
 
 	// look up stage
 	parameter BLOCK_LEN = BLOCK_SIZE << 3;
