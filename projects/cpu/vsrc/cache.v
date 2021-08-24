@@ -178,7 +178,8 @@ module cache #(
 				assign data_we[i] = (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1) & 1'b1 
 								 |  (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
 				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_strb
-								 |  {STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & request_buffer_strb;
+								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & 8'b1111_1111)
+								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_strb);
 			end
 	endgenerate
 
