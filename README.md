@@ -39,6 +39,8 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.18 : add ecall and exception handle unit, add mstatus mcause mtvec mepc in csr, still lacking mie and mip(for now we don't need handle interrupt)
 
+2021.8.24 : Add 8kB Icache and 8KB Dcache, 2 way set, blocksize = 32bytes, Pseudo-random replacement algorithm using lfsr
+
 ## DOING:
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
 	* memory mask signal generate method				[done]
@@ -48,7 +50,7 @@ environment : vim + verilator + difftest + nemu + gtkwave
 	* multicycle divide [done]
 	* reuse the adder in alu
 ## TODO:
-* implement icache and dcache ( didn't make it in NSCSCC, a very challenging work)
+* Branch prediction
 * improve cpu's perfomance by switching to other micor-architecture like superscalar, out-of-order, more stages pipeline
 * debug with RT-thread
 	
