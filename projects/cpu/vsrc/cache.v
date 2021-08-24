@@ -47,7 +47,7 @@ module cache #(
 	//Data table
 	generate
 			for(genvar i = 0;i < BANK_NUM ;i = i + 1) begin: DataTable
-				singlePortRam #(DATA_LEN, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(data_addr[i]), .cs_n(data_cs[i]), .we(data_we[i]), .din(data_din[i]), .dout(data_dout[i]));
+				singlePortRam_wstrb #(DATA_LEN, SET_NUM) Bank(.clk(clk), .rst(rst), .addr(data_addr[i]), .cs_n(data_cs[i]), .we(data_we[i]), .din(data_din[i]), .wstrb(data_wstrb[i]), .dout(data_dout[i]));
 			end
 	endgenerate
 	//tag, v table
@@ -64,9 +64,9 @@ module cache #(
 	endgenerate
 
 	/*	input signal	*/
-	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);
+	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);
 	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
-	wire conflict = (req_valid == 1'b1 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
+	//wire conflict = (req_valid == 1'b1 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
 	wire req_rvalid = req_valid & (req_op == 1'b0) & ~conflict;
 	wire req_wvalid = req_valid & (req_op == 1'b1) & ~conflict;	//no need to test conflict
 	wire raxi_done = raxi_dvalid & raxi_dlast;
@@ -154,10 +154,12 @@ module cache #(
 	wire [BANK_NUM - 1 : 0] data_we;		
 	wire [ADDR_WIDTH - 1 : 0] data_addr [BANK_NUM - 1 : 0];		
 	wire [DATA_LEN - 1 : 0] data_din [BANK_NUM - 1 : 0];		
+	wire [STRB_LEN - 1 : 0] data_wstrb [BANK_NUM - 1 : 0];		
 	wire [DATA_LEN - 1 : 0] data_dout [BANK_NUM - 1 : 0];		
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_cs
-				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1))) 
+				//assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1))) 
+				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid)  && (offset[3] == (i & 1'b1))) 			//store don't read data, only read tag
 				| (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)
 				| (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) ? `CHIP_EN : `CHIP_DI;	
 
@@ -175,6 +177,8 @@ module cache #(
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_we
 				assign data_we[i] = (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1) & 1'b1 
 								 |  (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
+				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_strb
+								 |  {STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & request_buffer_strb;
 			end
 	endgenerate
 
@@ -184,9 +188,9 @@ module cache #(
 								| ({INDEX_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_index)
 								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & miss_buffer_replace_index);
 
-				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_wdata)
+				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_data)
 								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] != (i & 1'b1)))}} & raxi_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)))}} & request_buffer_wdata);
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)))}} & request_buffer_data);
 			end
 	endgenerate
 	
@@ -276,12 +280,13 @@ module cache #(
 			end
 		end
 
-	wire [DATA_LEN - 1 : 0] request_buffer_wdata;
+	/*wire [DATA_LEN - 1 : 0] request_buffer_wdata;
 	generate
 		for(genvar i = 0; i < STRB_LEN; i++) begin
 			assign request_buffer_wdata[i * 8 +: 8] = (request_buffer_op & request_buffer_strb[i]) == 1 ? request_buffer_data[i * 8 +: 8] : raxi_data[i * 8 +: 8];
 		end
 	endgenerate
+	*/
 
 	// look up stage
 	parameter BLOCK_LEN = BLOCK_SIZE << 3;
@@ -380,7 +385,7 @@ module cache #(
 	reg [INDEX_LEN - 1 : 0] write_buffer_index;
 	reg [STRB_LEN - 1 : 0] write_buffer_strb;
 	reg [DATA_LEN - 1 : 0] write_buffer_data;
-	reg [DATA_LEN - 1 : 0] write_buffer_rdata;
+	//reg [DATA_LEN - 1 : 0] write_buffer_rdata;
 	reg [WAY_NUM - 1 : 0] write_buffer_wayhit;
 	reg [OFFSET_LEN - 1 : 0] write_buffer_offset;
 	
@@ -390,7 +395,7 @@ module cache #(
 					write_buffer_index <= {INDEX_LEN{1'b0}};
 					write_buffer_strb <= {STRB_LEN{1'b0}};
 					write_buffer_data <= {DATA_LEN{1'b0}};
-					write_buffer_rdata <= {DATA_LEN{1'b0}};	
+					//write_buffer_rdata <= {DATA_LEN{1'b0}};	
 					write_buffer_wayhit <= {WAY_NUM{1'b0}};
 					write_buffer_offset <= {OFFSET_LEN{1'b0}};
 			end	
@@ -399,19 +404,20 @@ module cache #(
 					write_buffer_index <= request_buffer_index;
 					write_buffer_strb <= request_buffer_strb;
 					write_buffer_data <= request_buffer_data;
-					write_buffer_rdata <= hit_data;	
+					//write_buffer_rdata <= hit_data;	
 					write_buffer_wayhit <= way_hit;
 					write_buffer_offset <= request_buffer_offset;
 				end
 			end
 		end
 		
-	wire [DATA_LEN - 1 : 0] write_buffer_wdata;
+	/*wire [DATA_LEN - 1 : 0] write_buffer_wdata;
 	generate
 		for(genvar i = 0; i < STRB_LEN; i++) begin
 			assign write_buffer_wdata[i * 8 +: 8] = write_buffer_strb[i] == 1 ? write_buffer_data[i * 8 +: 8] : write_buffer_rdata[i * 8 +: 8];
 		end
 	endgenerate
+	*/
 
 
 	/*  output signal   */

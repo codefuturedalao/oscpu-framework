@@ -1,6 +1,7 @@
+
 `include "defines.v"
 
-module singlePortRam #(
+module singlePortRam_wstrb #(
 	parameter REG_WIDTH = 64,
 	parameter REG_DEPTH = 64
 )
@@ -10,6 +11,7 @@ module singlePortRam #(
 	input wire [$clog2(REG_DEPTH) - 1 : 0] addr,
 	input wire cs_n,
 	input wire we,
+	input wire [(REG_WIDTH >> 3)  - 1 : 0] wstrb,
 	input wire [REG_WIDTH - 1 : 0] din,
 	
 	output wire [REG_WIDTH - 1 : 0] dout
@@ -29,7 +31,14 @@ module singlePortRam #(
 				end 	
 			end
 			else if(~cs_n & we) begin
-					ram[addr] <= din;
+				ram[addr][7 : 0] <= wstrb[0] ? din[7 : 0] : ram[addr][7 : 0];
+				ram[addr][15 : 8] <= wstrb[1] ? din[15 : 8] : ram[addr][15 : 8];
+				ram[addr][23 : 16] <= wstrb[2] ? din[23 : 16] : ram[addr][23 : 16];
+				ram[addr][31 : 24] <= wstrb[3] ? din[31 : 24] : ram[addr][31 : 24];
+				ram[addr][39 : 32] <= wstrb[4] ? din[39 : 32] : ram[addr][39 : 32];
+				ram[addr][47 : 40] <= wstrb[5] ? din[47 : 40] : ram[addr][47 : 40];
+				ram[addr][55 : 48] <= wstrb[6] ? din[55 : 48] : ram[addr][55 : 48];
+				ram[addr][63 : 56] <= wstrb[7] ? din[63 : 56] : ram[addr][63 : 56];
 			end
 		end
 
