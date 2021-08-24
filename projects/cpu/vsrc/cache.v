@@ -99,8 +99,11 @@ module cache #(
 						if(hit && (req_valid == 1'b0 | conflict == 1'b1)) begin
 							m_state <= M_STATE_IDLE;
 						end
-						else if(hit == 1'b0) begin
+						else if(hit == 1'b0 & (way_valid & way_dirty) == 1'b1) begin
 							m_state <= M_STATE_MISS;	
+						end
+						else if(hit == 1'b0 & (way_valid & way_dirty) == 1'b0) begin
+							m_state <= M_STATE_REFILL;							//no need to write back, just refill
 						end
 						//else if(hit && req_valid == 1'b1 && conflict == 1'b0) keep lookup
 					end
@@ -232,7 +235,8 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_cs
 				//assign dirty_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid)) | (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) ? `CHIP_EN : `CHIP_DI;
-				assign dirty_cs[i] = (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) 
+				assign dirty_cs[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))		//store : read the dirty tag
+								|    (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) 
 								|	 (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i)? `CHIP_EN : `CHIP_DI;		//don't read in the idle and lookup stage
 			end
 	endgenerate
@@ -240,14 +244,17 @@ module cache #(
 	//assign dirty_we = {WAY_NUM{1'b0}};		//read the tag
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_we
-				assign dirty_we[i] = (w_state_write & write_buffer_wayhit[(i & 1'b1)] == 1'b1) & 1'b1
+				assign dirty_we[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1)) & 1'b0
+									|(w_state_write & write_buffer_wayhit[(i & 1'b1)] == 1'b1) & 1'b1
 									|(m_state_refill & raxi_dvalid & miss_buffer_replace_way == i) & 1'b1;
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_addr
-				assign dirty_addr[i] = w_state_write ? write_buffer_index : ((m_state_refill & raxi_dvalid & miss_buffer_replace_way == i) ? miss_buffer_replace_index : index);		
+				assign dirty_addr[i] = {INDEX_LEN{w_state_write}} & write_buffer_index 
+									|  {INDEX_LEN{((m_state_refill & raxi_dvalid & miss_buffer_replace_way == i))}} & miss_buffer_replace_index
+									|  {INDEX_LEN{((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))}} & index;
 				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i && request_buffer_op == 1'b1)) ? 1'b1 : 1'b0;		//only write
 			end
 	endgenerate
@@ -315,8 +322,11 @@ module cache #(
 	wire [2 : 0] seed_data = 8'b10010101;
 	wire [31 : 0] lfsr_data;
 	lfsr #(.NUM_BITS(32)) Lfsr(clk, ~rst, .i_Seed_DV(1'b0), .i_Seed_Data(seed_data), .o_LFSR_Data(lfsr_data), .o_LFSR_Done());
-	wire [1 : 0] way_sel = (^lfsr_data) ? 2'b01 : 2'b10;
+	wire [WAY_NUM - 1 : 0] way_sel = (^lfsr_data) ? 2'b01 : 2'b10;
 	//miss
+	wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
+	wire way_valid = (way_sel[0] & tag_dout[TAG_LEN]) | (way_sel[1] & tag_dout[TAG_LEN]);
+
 	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
 											| {BLOCK_LEN{way_sel[1]}} & (way_data[1]);
 	wire [TAG_LEN + 1 - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
@@ -345,7 +355,7 @@ module cache #(
 			end
 		end
 	//replace
-	assign waxi_valid = m_state_replace & miss_buffer_replace_tag[TAG_LEN];
+	assign waxi_valid = m_state_replace;
 	assign waxi_data = miss_buffer_replace_data;
 	assign waxi_size = `SIZE_L;
 	assign waxi_addr = {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
