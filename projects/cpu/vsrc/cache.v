@@ -306,7 +306,10 @@ module cache #(
 
 	//read hit and request valid, still lookup
 	//write hit, store info in write buffer
-	wire [1 : 0] way_sel = 2'b01;
+	wire [2 : 0] seed_data = 8'b10010101;
+	wire [31 : 0] lfsr_data;
+	lfsr #(.NUM_BITS(32)) Lfsr(clk, ~rst, .i_Seed_DV(1'b0), .i_Seed_Data(seed_data), .o_LFSR_Data(lfsr_data), .o_LFSR_Done());
+	wire [1 : 0] way_sel = (^lfsr_data) ? 2'b01 : 2'b10;
 	//miss
 	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
 											| {BLOCK_LEN{way_sel[1]}} & (way_data[1]);
