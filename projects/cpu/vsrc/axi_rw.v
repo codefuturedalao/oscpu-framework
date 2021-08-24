@@ -266,7 +266,7 @@ module axi_rw # (
 						else if(~ar_hs & inst_r_done) begin
 							r_state <= R_STATE_IF_IE_ME_AR;
 						end
-						else if(ar_hs & mem_r_done) begin
+						else if(ar_hs & inst_r_done) begin
 							r_state <= R_STATE_IF_IE_ME_RD;	
 						end
 					end
