@@ -189,8 +189,8 @@ module cache #(
 								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & miss_buffer_replace_index);
 
 				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] != (i & 1'b1)))}} & raxi_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)))}} & request_buffer_data);
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & raxi_data)
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_data);
 			end
 	endgenerate
 	
