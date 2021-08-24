@@ -64,8 +64,8 @@ module cache #(
 	endgenerate
 
 	/*	input signal	*/
-	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);
-	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
+	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);		//write tag, read tag in store conflict
+	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
 	//wire conflict = (req_valid == 1'b1 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
 	wire req_rvalid = req_valid & (req_op == 1'b0) & ~conflict;
 	wire req_wvalid = req_valid & (req_op == 1'b1) & ~conflict;	//no need to test conflict

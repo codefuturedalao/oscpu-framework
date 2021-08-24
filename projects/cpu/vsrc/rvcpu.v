@@ -102,7 +102,7 @@ cache ICache(
 	.index(inst_addr[11 : 4]),
 	.tag(inst_addr[63 : 12]),
 	.offset(inst_addr[3 : 0]),
-	.wstrb(8'b0),
+	.wstrb(8'b1111_1111),
 	.wdata(64'b0),
 	.addr_ok(inst_addr_ok),
 	.data_ok(inst_data_ok),
