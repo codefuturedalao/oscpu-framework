@@ -245,9 +245,9 @@ if [[ $RUNALL == "true" ]]; then
         if (grep 'HIT GOOD TRAP' $LOG_FILE > /dev/null) then
             echo -e "\033[1;32mPASS!\033[0m"
 			#grep 'IPC' $LOG_FILE
-        	printf "[%30s] " $FILE_NAME	>>	./cachev2_1.txt
-            echo -e "\033[1;32mPASS!\033[0m"	>>	./cachev2_1.txt
-			grep 'IPC' $LOG_FILE	>>	./cachev2_1.txt
+        	printf "[%30s] " $FILE_NAME	>>	./cachev2_2.txt
+            echo -e "\033[1;32mPASS!\033[0m"	>>	./cachev2_2.txt
+			grep 'IPC' $LOG_FILE	>>	./cachev2_2.txt
             rm $LOG_FILE
         else
             echo -e "\033[1;31mFAIL!\033[0m see $BUILD_PATH/$LOG_FILE for more information"
