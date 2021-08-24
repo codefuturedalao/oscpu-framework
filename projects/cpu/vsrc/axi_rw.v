@@ -50,7 +50,7 @@
 
 module axi_rw # (
 `ifdef CACHE
-    parameter RW_DATA_WIDTH     = 128,		//block size !!!
+    parameter RW_DATA_WIDTH     = `CACHE_BLOCK_DATA_WIDTH,		//block size !!!
 `else 
     parameter RW_DATA_WIDTH     = 64,		//block size !!!
 `endif
@@ -179,6 +179,7 @@ module axi_rw # (
     wire w_state_idle = w_state == W_STATE_IDLE, w_state_addr = w_state == W_STATE_ADDR, w_state_write = w_state == W_STATE_WRITE, w_state_resp = w_state == W_STATE_RESP;
     wire r_state_idle = r_state == R_STATE_IDLE, r_state_if_ar_me_ie = r_state == R_STATE_IF_AR_ME_IE, r_state_if_rd_me_ie  = r_state == R_STATE_IF_RD_ME_IE, r_state_if_rd_me_rd = r_state == R_STATE_IF_RD_ME_RD, r_state_if_rd_me_ar = r_state == R_STATE_IF_RD_ME_AR, r_state_if_ie_me_ar = r_state == R_STATE_IF_IE_ME_AR, r_state_if_ie_me_rd = r_state == R_STATE_IF_IE_ME_RD, r_state_if_ar_me_rd = r_state == R_STATE_IF_AR_ME_RD;
 
+    reg [RW_DATA_WIDTH-1:0]            mem_data_write_r;
     // Wirte State Machine
     always @(posedge clock) begin
         if (reset) begin
@@ -187,7 +188,7 @@ module axi_rw # (
         else begin
 `ifdef CACHE
                 case (w_state)
-                    W_STATE_IDLE:  if (w_valid) w_state <= W_STATE_ADDR;
+                    W_STATE_IDLE:  if (w_valid)begin w_state <= W_STATE_ADDR; mem_data_write_r <= mem_data_write_i; end
                     W_STATE_ADDR:  if (aw_hs)   w_state <= W_STATE_WRITE;
                     W_STATE_WRITE: if (w_done)  w_state <= W_STATE_RESP;
                     W_STATE_RESP:  if (b_hs)    w_state <= W_STATE_IDLE;
@@ -357,8 +358,7 @@ module axi_rw # (
     wire [3:0] inst_addr_end     = inst_addr_op1 + inst_addr_op2;
     wire inst_overstep           = inst_addr_end[3:ALIGNED_WIDTH] != 0;
 
-    wire [7:0] inst_axi_len      = inst_aligned ? TRANS_LEN - 1 : {{7{1'b0}}, inst_overstep};
-    wire [2:0] inst_axi_size     = AXI_SIZE[2:0];
+    wire [7:0] inst_axi_len      = inst_aligned ? TRANS_LEN - 1 : {{7{1'b0}}, inst_overstep}; wire [2:0] inst_axi_size     = AXI_SIZE[2:0];
     wire [AXI_ADDR_WIDTH-1:0] inst_axi_addr    = {inst_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
 
     wire [OFFSET_WIDTH-1:0] inst_aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {inst_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
@@ -554,12 +554,17 @@ module axi_rw # (
 
 	//actually no need to judge axi_w_valid_o signal;
 `ifdef CACHE
-	assign axi_w_data_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? mem_data_write_i[0 +: AXI_DATA_WIDTH]: mem_data_write_i[AXI_DATA_WIDTH +: AXI_DATA_WIDTH]) : {AXI_DATA_WIDTH{1'b0}};
+	assign axi_w_data_o = axi_w_valid_o ? 
+		{AXI_DATA_WIDTH{mem_wlen == 2'b00}} & mem_data_write_r[0 +: AXI_DATA_WIDTH]
+	 |	({AXI_DATA_WIDTH{mem_wlen == 2'b01}} & mem_data_write_r[AXI_DATA_WIDTH +: AXI_DATA_WIDTH])
+	 |	({AXI_DATA_WIDTH{mem_wlen == 2'b10}} & mem_data_write_r[2 * AXI_DATA_WIDTH +: AXI_DATA_WIDTH])
+	 |	({AXI_DATA_WIDTH{mem_wlen == 2'b11}} & mem_data_write_r[3 * AXI_DATA_WIDTH +: AXI_DATA_WIDTH]) : {AXI_DATA_WIDTH{1'b0}};
+
 	assign axi_w_strb_o = axi_w_valid_o ? 8'b1111_1111  : {AXI_DATA_WIDTH/8{1'b0}};
 	assign axi_w_last_o = axi_w_valid_o ? (mem_wlen == mem_axi_wlen) : 1'b0;
 `else
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_i << mem_waligned_offset_l);
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_i >> mem_waligned_offset_h);
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = (mem_data_write_r << mem_waligned_offset_l);
+    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = (mem_data_write_r >> mem_waligned_offset_h);
 	assign axi_w_data_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? axi_w_data_l : axi_w_data_h) : {AXI_DATA_WIDTH{1'b0}};
 	assign axi_w_strb_o = axi_w_valid_o ? (mem_wlen[0] == 1'b0 ? mem_strb_l : mem_strb_h) : {AXI_DATA_WIDTH/8{1'b0}};
 	assign axi_w_last_o = axi_w_valid_o ? (mem_wlen == mem_axi_wlen) : 1'b0;

@@ -198,3 +198,20 @@
 `define LOAD_PAGE_FAULT		5'b0_1101
 //reserved for furture standard use
 `define STORE_PAGE_FAULT	5'b0_1111
+
+
+`ifdef CACHE
+`define CACHE_BLOCK_DATA_WIDTH	256
+`define CACHE_OFFSET_LEN 5
+`define OFFSET_BITSEL	 4 : 0
+`define BANK_BITSEL		 4 : 3
+`define BANK_MASK		 2'b11
+`define WAY_MASK		 3'b100
+`define CACHE_INDEX_LEN  7			//12 - offset_len
+`define INDEX_BITSEL	 11 : 5
+`define CACHE_TAG_LEN	52
+`define TAG_BITSEL		 63 : 12
+`define CACHE_WAY_NUM    2	
+
+`else
+`endif

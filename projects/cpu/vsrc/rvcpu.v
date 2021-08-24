@@ -99,9 +99,9 @@ cache ICache(
 	
 	.req_valid(if_req_valid),
 	.req_op(if_req_op),
-	.index(inst_addr[11 : 4]),
-	.tag(inst_addr[63 : 12]),
-	.offset(inst_addr[3 : 0]),
+	.index(inst_addr[`INDEX_BITSEL]),
+	.tag(inst_addr[`TAG_BITSEL]),
+	.offset(inst_addr[`OFFSET_BITSEL]),
 	.wstrb(8'b1111_1111),
 	.wdata(64'b0),
 	.addr_ok(inst_addr_ok),
@@ -643,9 +643,9 @@ cache DCache(
 	
 	.req_valid(mem_req_valid),
 	.req_op(mem_req_op),
-	.index(mem_addr[11 : 4]),
-	.tag(mem_addr[63 : 12]),
-	.offset(mem_addr[3 : 0]),
+	.index(mem_addr[`INDEX_BITSEL]),
+	.tag(mem_addr[`TAG_BITSEL]),
+	.offset(mem_addr[`OFFSET_BITSEL]),
 	.wstrb(mem_wstrb),
 	.wdata(mem_wdata),
 	.addr_ok(mem_addr_ok),
@@ -664,7 +664,6 @@ cache DCache(
 	.waxi_addr(mem_waddr),
 	.waxi_data(mem_data_write),
 	.waxi_ready(mem_wready)
-	//.waxi_strb(
 );
 /*
 		me_stage Me_stage(

@@ -1,14 +1,13 @@
 `include "defines.v"
 
 module cache #(
-	parameter INDEX_LEN = 8,
-	parameter OFFSET_LEN = 4,
+	parameter INDEX_LEN = `CACHE_INDEX_LEN,
+	parameter OFFSET_LEN = `CACHE_OFFSET_LEN,
 	parameter TAG_LEN = 52,
-	parameter WAY_NUM = 2,
-	parameter BLOCK_SIZE = 1 << OFFSET_LEN,		//16 bytes
+	parameter WAY_NUM = `CACHE_WAY_NUM,
+	parameter BLOCK_SIZE = 1 << OFFSET_LEN,	
 	parameter DATA_LEN = 64,
 	parameter STRB_LEN = DATA_LEN / 8 
-	//parameter  
 )
 (
 	input wire clk,
@@ -42,6 +41,8 @@ module cache #(
 	parameter DATA_SIZE = DATA_LEN / 8;
 	parameter BANK_NUM_PER_WAY = BLOCK_SIZE  / DATA_SIZE;
 	parameter BANK_NUM = BANK_NUM_PER_WAY * WAY_NUM;
+	parameter BANK_LEN = $clog2(BANK_NUM);
+	parameter BANK_PERWAY_LEN = BANK_LEN - WAY_LEN;
 
 	/*		RAM		*/
 	//Data table
@@ -65,7 +66,7 @@ module cache #(
 
 	/*	input signal	*/
 	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);		//write tag, read tag in store conflict
-	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
+	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[`BANK_BITSEL] == request_buffer_offset[`BANK_BITSEL]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[`BANK_BITSEL] == offset[`BANK_BITSEL]);
 	//wire conflict = (req_valid == 1'b1 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
 	wire req_rvalid = req_valid & (req_op == 1'b0) & ~conflict;
 	wire req_wvalid = req_valid & (req_op == 1'b1) & ~conflict;	//no need to test conflict
@@ -119,7 +120,7 @@ module cache #(
 						m_state <= M_STATE_REFILL;	//keep 1 cycle
 					end
 					M_STATE_REFILL:	
-						if(counter == WAY_NUM) begin
+						if(counter == BANK_NUM_PER_WAY) begin
 							m_state <= M_STATE_IDLE;
 						end
 					default: begin end
@@ -152,76 +153,69 @@ module cache #(
 	/* Main State Transaction */
 	//parameter BANK_NUM_PER_WAY
 	//TODO: use parameter to generate 
-	parameter ADDR_WIDTH = $clog2(SET_NUM);		//same as INDEX_LEN
+	//parameter ADDR_WIDTH = $clog2(SET_NUM);		//same as INDEX_LEN
 	wire [BANK_NUM - 1 : 0] data_cs;		
 	wire [BANK_NUM - 1 : 0] data_we;		
-	wire [ADDR_WIDTH - 1 : 0] data_addr [BANK_NUM - 1 : 0];		
+	wire [INDEX_LEN - 1 : 0] data_addr [BANK_NUM - 1 : 0];		
 	wire [DATA_LEN - 1 : 0] data_din [BANK_NUM - 1 : 0];		
 	wire [STRB_LEN - 1 : 0] data_wstrb [BANK_NUM - 1 : 0];		
 	wire [DATA_LEN - 1 : 0] data_dout [BANK_NUM - 1 : 0];		
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_cs
 				//assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1))) 
-				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid)  && (offset[3] == (i & 1'b1))) 			//store don't read data, only read tag
-				| (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)
-				| (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) ? `CHIP_EN : `CHIP_DI;	
+				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid)  && (offset[`BANK_BITSEL] == (i & `BANK_MASK))) 			//store don't read data, only read tag
+				| (w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)
+				| (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)) ? `CHIP_EN : `CHIP_DI;	
 
 			end
 	endgenerate
-/*
-		assign data_cs[2'b00] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && offset[3] == 1'b0) | (m_state_lookup & write_buffer_offset[3] == 1'b0 & write_buffer_wayhit[0] == 1'b1) ? `CHIP_EN : `CHIP_DI;	
-		assign data_cs[2'b01] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && offset[3] == 1'b1)  | (m_state_lookup & write_buffer_offset[3] == 1'b1 & write_buffer_wayhit[0] == 1'b1) ? `CHIP_EN : `CHIP_DI;	
-		assign data_cs[2'b10] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && offset[3] == 1'b0)  | (m_state_lookup & write_buffer_offset[3] == 1'b0 & write_buffer_wayhit[1] == 1'b1) ? `CHIP_EN : `CHIP_DI;	
-		assign data_cs[2'b11] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && offset[3] == 1'b1)  | (m_state_lookup & write_buffer_offset[3] == 1'b1 & write_buffer_wayhit[1] == 1'b1) ? `CHIP_EN : `CHIP_DI;	
-	
-*/
-	//assign data_we = m_state_lookup{BANK_NUM{1'b0}};		//all read signal
+
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_we
-				assign data_we[i] = (w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1) & 1'b1 
-								 |  (m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1))) & 1'b1;
-				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_strb
-								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & 8'b1111_1111)
-								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & 8'b1111_1111);
+				assign data_we[i] = (w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1) & 1'b1 
+								 |  (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)) & 1'b1;
+				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_strb
+								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & ((request_buffer_offset[`BANK_BITSEL] != (i & `BANK_MASK)) | request_buffer_op == 1'b0))}} & 8'b1111_1111)
+								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & (request_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & request_buffer_op == 1'b1)}} & 8'b1111_1111);
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_addr
-				assign data_addr[i] = ({INDEX_LEN{((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1)))}} & index) 
-								| ({INDEX_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_index)
-								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & (miss_buffer_replace_way == ((i & 2'b10) >> 1)))}} & miss_buffer_replace_index);
+				assign data_addr[i] = ({INDEX_LEN{((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[`BANK_BITSEL] == (i & `BANK_MASK)))}} & index) 
+								| ({INDEX_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_index)
+								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1))}} & miss_buffer_replace_index);
 
-				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[3] == (i & 1'b1)) & write_buffer_wayhit[(i & 2'b10) >> 1] == 1'b1)}} & write_buffer_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & ((request_buffer_offset[3] != (i & 1'b1)) | request_buffer_op == 1'b0))}} & raxi_data)
-								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & 1'b1)) & miss_buffer_replace_way == ((i & 2'b10) >> 1) & (request_buffer_offset[3] == (i & 1'b1)) & request_buffer_op == 1'b1)}} & request_buffer_wdata);
+				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_data)
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & ((request_buffer_offset[`BANK_BITSEL] != (i & `BANK_MASK)) | request_buffer_op == 1'b0))}} & raxi_data)
+								| ({DATA_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & (request_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & request_buffer_op == 1'b1)}} & request_buffer_wdata);
 			end
 	endgenerate
 	
 	
 	wire [WAY_NUM - 1 : 0] tag_cs;
 	wire [WAY_NUM - 1 : 0] tag_we;		
-	wire [ADDR_WIDTH - 1 : 0] tag_addr [WAY_NUM - 1 : 0];		
+	wire [INDEX_LEN - 1 : 0] tag_addr [WAY_NUM - 1 : 0];		
 	wire [TAG_LEN + 1 - 1 : 0] tag_din [WAY_NUM - 1 : 0];		
 	wire [TAG_LEN + 1 - 1 : 0] tag_dout [WAY_NUM - 1 : 0];		
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_tag_cs
 				assign tag_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid)) 
-								|  ((m_state_refill & raxi_dvalid & miss_buffer_replace_way == i )) 
+								|  ((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1)) 
 					? `CHIP_EN : `CHIP_DI;
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_tag_we
-				assign tag_we[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i);
+				assign tag_we[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1);
 			end
 	endgenerate
 	//assign tag_we = {WAY_NUM{1'b0}};		//read the tag, write whe refill
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_tag_addr
-				assign tag_addr[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i) ? miss_buffer_replace_index : index;
+				assign tag_addr[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1) ? miss_buffer_replace_index : index;
 				assign tag_din[i] = {1'b1, request_buffer_tag};
 			end
 	endgenerate
@@ -229,15 +223,15 @@ module cache #(
 	
 	wire [WAY_NUM - 1 : 0] dirty_cs;
 	wire [WAY_NUM - 1 : 0] dirty_we;		
-	wire [ADDR_WIDTH - 1 : 0] dirty_addr [WAY_NUM - 1 : 0];		
+	wire [INDEX_LEN - 1 : 0] dirty_addr [WAY_NUM - 1 : 0];		
 	wire [1 - 1 : 0] dirty_din [WAY_NUM - 1 : 0];		
 	wire [1 - 1 : 0] dirty_dout [WAY_NUM - 1 : 0];		
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_cs
 				//assign dirty_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid)) | (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) ? `CHIP_EN : `CHIP_DI;
 				assign dirty_cs[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))		//store : read the dirty tag
-								|    (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) 
-								|	 (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i)? `CHIP_EN : `CHIP_DI;		//don't read in the idle and lookup stage
+								|    (w_state_write && write_buffer_wayhit[i] == 1'b1) 
+								|	 (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1)? `CHIP_EN : `CHIP_DI;		//don't read in the idle and lookup stage
 			end
 	endgenerate
 
@@ -245,17 +239,17 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_we
 				assign dirty_we[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1)) & 1'b0
-									|(w_state_write & write_buffer_wayhit[(i & 1'b1)] == 1'b1) & 1'b1
-									|(m_state_refill & raxi_dvalid & miss_buffer_replace_way == i) & 1'b1;
+									|(w_state_write & write_buffer_wayhit[i] == 1'b1) & 1'b1
+									|(m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1) & 1'b1;
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_addr
 				assign dirty_addr[i] = {INDEX_LEN{w_state_write}} & write_buffer_index 
-									|  {INDEX_LEN{((m_state_refill & raxi_dvalid & miss_buffer_replace_way == i))}} & miss_buffer_replace_index
+									|  {INDEX_LEN{((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1))}} & miss_buffer_replace_index
 									|  {INDEX_LEN{((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))}} & index;
-				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way == i && request_buffer_op == 1'b1)) ? 1'b1 : 1'b0;		//only write
+				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1 && request_buffer_op == 1'b1)) ? 1'b1 : 1'b0;		//only write
 			end
 	endgenerate
 
@@ -280,7 +274,7 @@ module cache #(
 				if(((m_state_lookup && hit) | m_state_idle) && (req_rvalid | req_wvalid)) begin		//what if miss
 					request_buffer_tag <= tag;
 					request_buffer_op <= req_op;
-					request_buffer_strb <= (wstrb << offset[2 : 0]);
+					request_buffer_strb <= (wstrb << offset[2 : 0]);		//no need to change when cache organization change
 					request_buffer_data <= (wdata << ({offset[2 : 0], 3'b000}));
 					request_buffer_offset <= offset;
 					request_buffer_index <= index;
@@ -297,7 +291,7 @@ module cache #(
 	
 
 	// look up stage
-	parameter BLOCK_LEN = BLOCK_SIZE << 3;
+	parameter BLOCK_LEN = BLOCK_SIZE << 3;		// *8
 	wire [WAY_NUM - 1 : 0] way_hit;
 	wire [BLOCK_LEN - 1 : 0] way_data [WAY_NUM - 1 : 0];
 	wire hit = |way_hit;
@@ -306,16 +300,14 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: lookup_hit
 				assign way_hit[i] = (m_state_lookup && tag_dout[i][0 +: TAG_LEN] == request_buffer_tag && (tag_dout[i][TAG_LEN] == 1'b1));
-				assign way_data[i] = {data_dout[(i << 1) + 1], data_dout[i << 1]};
+				//assign way_data[i] = {data_dout[(i << 1) + 1], data_dout[i << 1]};
+				assign way_data[i] = {data_dout[(i << BANK_PERWAY_LEN) + 3], data_dout[(i << BANK_PERWAY_LEN) + 2], data_dout[(i << BANK_PERWAY_LEN) + 1], data_dout[i << BANK_PERWAY_LEN]};
 			end
 	endgenerate
 
 	//read hit, no other request, go to idle
-	/*wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (way_data[offset[3] * 64 +: 64])
-				 					 | {64{way_hit[1]}} & (way_data[offset[3] * 64 +: 64]);
-*/
-	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (data_dout[{1'b0, request_buffer_offset[3]}])
-				 					 | {64{way_hit[1]}} & (data_dout[{1'b1, request_buffer_offset[3]}]);
+	wire [DATA_LEN - 1 : 0] hit_data = {64{way_hit[0]}} & (data_dout[{1'b0, request_buffer_offset[`BANK_BITSEL]}])
+				 					 | {64{way_hit[1]}} & (data_dout[{1'b1, request_buffer_offset[`BANK_BITSEL]}]);
 
 	//read hit and request valid, still lookup
 	//write hit, store info in write buffer
@@ -323,6 +315,7 @@ module cache #(
 	wire [31 : 0] lfsr_data;
 	lfsr #(.NUM_BITS(32)) Lfsr(clk, ~rst, .i_Seed_DV(1'b0), .i_Seed_Data(seed_data), .o_LFSR_Data(lfsr_data), .o_LFSR_Done());
 	wire [WAY_NUM - 1 : 0] way_sel = (^lfsr_data) ? 2'b01 : 2'b10;
+	//wire [WAY_LEN - 1 : 0] replace_way_sel = way_sel == 2'b01 ? 1'b0 : 1'b1;
 	//miss
 	wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
 	wire way_valid = (way_sel[0] & tag_dout[TAG_LEN]) | (way_sel[1] & tag_dout[TAG_LEN]);
@@ -334,7 +327,8 @@ module cache #(
 	wire [INDEX_LEN - 1 : 0] replace_index = request_buffer_index;
 	
 	parameter WAY_LEN = $clog2(WAY_NUM);
-	reg [WAY_LEN - 1 : 0] miss_buffer_replace_way;
+
+	reg [WAY_NUM - 1 : 0] miss_buffer_replace_way;
 	reg [BLOCK_LEN - 1 : 0] miss_buffer_replace_data;
 	reg [TAG_LEN +1 - 1 : 0] miss_buffer_replace_tag;
 	reg [INDEX_LEN - 1 : 0] miss_buffer_replace_index;
@@ -359,11 +353,9 @@ module cache #(
 	assign waxi_data = miss_buffer_replace_data;
 	assign waxi_size = `SIZE_L;
 	assign waxi_addr = {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
-	//assign waxi_size = ;
-	//assign waxi_strb = ;
 	//refill
 	//assign raxi_valid = m_state_refill & ~raxi_dlast;
-	assign raxi_valid = m_state_refill & ~raxi_dlast & (counter != WAY_NUM);
+	assign raxi_valid = m_state_refill & ~raxi_dlast & (counter != BANK_NUM_PER_WAY);
 	assign raxi_size = `SIZE_L;
 	assign raxi_addr = {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}};
 
@@ -385,7 +377,7 @@ module cache #(
 			if(rst == 1'b1) begin
 				miss_buffer_rdata <= {DATA_LEN{1'b0}};
 			end
-			else if((raxi_dvalid & m_state_refill) && counter == request_buffer_offset[3]) begin
+			else if((raxi_dvalid & m_state_refill) && counter == request_buffer_offset[`BANK_BITSEL]) begin
 				miss_buffer_rdata <= raxi_data;	
 			end
 		end
@@ -422,18 +414,10 @@ module cache #(
 			end
 		end
 		
-	/*wire [DATA_LEN - 1 : 0] write_buffer_wdata;
-	generate
-		for(genvar i = 0; i < STRB_LEN; i++) begin
-			assign write_buffer_wdata[i * 8 +: 8] = write_buffer_strb[i] == 1 ? write_buffer_data[i * 8 +: 8] : write_buffer_rdata[i * 8 +: 8];
-		end
-	endgenerate
-	*/
-
 
 	/*  output signal   */
 	assign addr_ok = (m_state_idle & conflict == 1'b0) | (m_state_lookup && hit && req_valid == 1'b1 && conflict == 1'b0);
-	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[3] + 1 & request_buffer_op == 1'b0);
+	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[`BANK_BITSEL] + 1 & request_buffer_op == 1'b0);
 	//assign rdata = {64{rhit}} & hit_data | miss_buffer_rdata;		//TODO
 	assign rdata = rhit ?  hit_data : miss_buffer_rdata;		//cannot keep
 

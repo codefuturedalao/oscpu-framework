@@ -192,7 +192,7 @@ if [[ "$BUILD" == "true" ]]; then
 
     #git commit
     git add . -A --ignore-errors
-    (echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
+    #(echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
     sync
 fi
 
@@ -245,9 +245,9 @@ if [[ $RUNALL == "true" ]]; then
         if (grep 'HIT GOOD TRAP' $LOG_FILE > /dev/null) then
             echo -e "\033[1;32mPASS!\033[0m"
 			#grep 'IPC' $LOG_FILE
-        	printf "[%30s] " $FILE_NAME	>>	./cachev2_2.txt
-            echo -e "\033[1;32mPASS!\033[0m"	>>	./cachev2_2.txt
-			grep 'IPC' $LOG_FILE	>>	./cachev2_2.txt
+        	printf "[%30s] " $FILE_NAME	>>	./cachev2_3.txt
+            echo -e "\033[1;32mPASS!\033[0m"	>>	./cachev2_3.txt
+			grep 'IPC' $LOG_FILE	>>	./cachev2_3.txt
             rm $LOG_FILE
         else
             echo -e "\033[1;31mFAIL!\033[0m see $BUILD_PATH/$LOG_FILE for more information"
