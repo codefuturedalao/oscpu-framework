@@ -244,6 +244,7 @@ if [[ $RUNALL == "true" ]]; then
         ./$EMU_FILE -i $BIN_FILE &> $LOG_FILE
         if (grep 'HIT GOOD TRAP' $LOG_FILE > /dev/null) then
             echo -e "\033[1;32mPASS!\033[0m"
+			grep 'IPC' $LOG_FILE
             rm $LOG_FILE
         else
             echo -e "\033[1;31mFAIL!\033[0m see $BUILD_PATH/$LOG_FILE for more information"
