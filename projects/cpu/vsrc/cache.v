@@ -314,7 +314,9 @@ module cache #(
 	wire [2 : 0] seed_data = 8'b10010101;
 	wire [31 : 0] lfsr_data;
 	lfsr #(.NUM_BITS(32)) Lfsr(clk, ~rst, .i_Seed_DV(1'b0), .i_Seed_Data(seed_data), .o_LFSR_Data(lfsr_data), .o_LFSR_Done());
-	wire [WAY_NUM - 1 : 0] way_sel = (^lfsr_data) ? 2'b01 : 2'b10;
+	wire [WAY_NUM - 1 : 0] way_sel = (dirty_dout[0] & ~dirty_dout[1]) ? 2'b10 
+								   : ((~dirty_dout[0] & dirty_dout[1]) ? 2'b01 
+								   : ((^lfsr_data) ? 2'b01 : 2'b10));
 	//wire [WAY_LEN - 1 : 0] replace_way_sel = way_sel == 2'b01 ? 1'b0 : 1'b1;
 	//miss
 	wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
