@@ -611,7 +611,7 @@ always @(posedge clock) begin
     cmt_valid <= wb_inst_valid;
 
  //   regs_diff <= regs;
-	skip <= wb_inst == 32'hb0079073;
+	skip <= (wb_inst == 32'hb0079073) | (wb_pc == 64'h0000_0000_8000_89c0);
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
     cycleCnt <= 1 + cycleCnt;

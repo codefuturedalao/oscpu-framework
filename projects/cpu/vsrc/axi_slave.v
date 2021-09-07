@@ -216,7 +216,7 @@ module axi_slave # (
 	assign axi_r_valid_o   = rw_ready_i;
 	assign axi_r_resp_o	   = rw_resp_i;
 	assign axi_r_data_o    = data_read_i;
-	assign axi_r_last_o	   = r_state_addr;
+	assign axi_r_last_o	   = r_state_read;
 	assign axi_r_id_o	   = rid_r;
 	assign axi_r_user_o	   = {AXI_USER_WIDTH{1'b0}};
 

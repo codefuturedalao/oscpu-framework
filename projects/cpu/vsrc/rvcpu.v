@@ -111,6 +111,7 @@ cache ICache(
 	.addr_ok(inst_addr_ok),
 	.data_ok(inst_data_ok),
 	.rdata(inst_data),
+	.cacheable(1'b1),		//default value
 
 	.raxi_valid(if_valid),
 	.raxi_size(if_size),
@@ -612,6 +613,7 @@ wire [`REG_BUS] mem_addr;
 wire [7 : 0] mem_wstrb;
 wire [`REG_BUS] mem_wdata;
 wire exe_stall_req_lsu;
+wire lsu_cacheable;
 lsu Lsu(
 	.clk(clk),
 	.rst(rst),
@@ -631,6 +633,7 @@ lsu Lsu(
 	.addr_ok(mem_addr_ok),
 	.data_ok(mem_data_ok),
 	.mem_data_read_i(me_mem_data_read),
+	.cacheable(lsu_cacheable),
 	
 	.ex_stall_req(exe_stall_req_lsu),
 	.me_stall_req(mem_stall_req),
@@ -660,6 +663,7 @@ cache DCache(
 	.addr_ok(mem_addr_ok),
 	.data_ok(mem_data_ok),
 	.rdata(me_mem_data_read),
+	.cacheable(lsu_cacheable),
 	
 	.raxi_valid(mem_rvalid),
 	.raxi_size(mem_rsize),

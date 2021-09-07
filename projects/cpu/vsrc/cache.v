@@ -24,6 +24,7 @@ module cache #(
 	input wire [OFFSET_LEN - 1 : 0] offset,
 	input wire [STRB_LEN - 1 : 0] wstrb,
 	input wire [DATA_LEN - 1 : 0] wdata,
+	input wire cacheable,
 	output wire addr_ok,
 	output wire data_ok,
 	output wire [DATA_LEN - 1 : 0] rdata,
@@ -35,7 +36,7 @@ module cache #(
 	input wire raxi_dlast,
 	input wire [DATA_LEN - 1 : 0] raxi_data,
 	output wire waxi_valid,
-	output wire waxi_size,
+	output wire [2 : 0] waxi_size,
 	output wire [`REG_BUS] waxi_addr,
 //	output wire waxi_strb,
 	output wire [BLOCK_LEN - 1 : 0] waxi_data,		//TODO BLOCK_LEN define
@@ -106,6 +107,7 @@ module cache #(
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
 				m_state <= M_STATE_IDLE;	
+				counter_max <= 3'b000;
 			end
 			else begin
 				case(m_state)
@@ -119,12 +121,18 @@ module cache #(
 						if(hit && (req_valid == 1'b0 | conflict == 1'b1)) begin
 							m_state <= M_STATE_IDLE;
 						end
-						else if(hit == 1'b0 & (way_valid & way_dirty) == 1'b1) begin
+						else if((request_buffer_cacheable == 1'b1 & hit == 1'b0 & ((way_valid & way_dirty) == 1'b1)) | (request_buffer_op == 1'b1 & request_buffer_cacheable == 1'b0)) begin
 							m_state <= M_STATE_MISS;	
 						end
-						else if(hit == 1'b0 & (way_valid & way_dirty) == 1'b0) begin
+						else if((hit == 1'b0 & (way_valid & way_dirty) == 1'b0) | (request_buffer_op == 1'b0 & request_buffer_cacheable == 1'b0)) begin
 							m_state <= M_STATE_REFILL;							//no need to write back, just refill
-						end
+							if(request_buffer_cacheable) begin
+								counter_max <= BANK_NUM_PER_WAY;
+							end
+							else begin
+								counter_max <= 3'b001;
+							end
+						end	
 						//else if(hit && req_valid == 1'b1 && conflict == 1'b0) keep lookup
 					end
 					M_STATE_MISS: begin
@@ -133,19 +141,28 @@ module cache #(
 						end
 					end
 					M_STATE_REPLACE: begin
-		//				if(raxi_ready == 1'b1) begin
-		//					m_state <= M_STATE_REFILL;
-		//				end
-						m_state <= M_STATE_REFILL;	//keep 1 cycle
+						if(request_buffer_op == 1'b1 && request_buffer_cacheable == 1'b0) begin	//write to uncacheable memory
+							m_state <= M_STATE_IDLE;
+						end
+						else begin
+							if(request_buffer_cacheable == 1'b1) begin
+								counter_max <= BANK_NUM_PER_WAY;
+							end
+							else begin
+								counter_max <= 3'b001;
+							end
+							m_state <= M_STATE_REFILL;	//keep 1 cycle
+						end
 					end
 					M_STATE_REFILL:	
-						if(counter == BANK_NUM_PER_WAY) begin
+						if(counter == counter_max) begin //TODO: or hs
 							m_state <= M_STATE_IDLE;
 						end
 					default: begin end
 				endcase
 			end
 		end
+
 
 	always
 		@(posedge clk) begin
@@ -281,6 +298,12 @@ module cache #(
 	reg [DATA_LEN - 1 : 0] request_buffer_data;
 	reg [OFFSET_LEN - 1 : 0] request_buffer_offset;
 	reg [INDEX_LEN - 1 : 0] request_buffer_index;
+	reg request_buffer_cacheable;
+	reg [2 : 0] request_buffer_wsize;
+	wire [2 : 0] wsize = (wstrb == 8'b0000_0001) ? `SIZE_B :
+						 (wstrb == 8'b0000_0011) ? `SIZE_H :
+						 (wstrb == 8'b0000_1111) ? `SIZE_W :
+						 (wstrb == 8'b1111_1111) ? `SIZE_D : `SIZE_L;
 	always
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
@@ -290,15 +313,18 @@ module cache #(
 				request_buffer_data <= {DATA_LEN{1'b0}};
 				request_buffer_offset <= {OFFSET_LEN{1'b0}};
 				request_buffer_index <= {INDEX_LEN{1'b0}};
+				request_buffer_cacheable <= 1'b0;
 			end
 			else begin
 				if(((m_state_lookup && hit) | m_state_idle) && (req_rvalid | req_wvalid)) begin		//what if miss
 					request_buffer_tag <= tag;
 					request_buffer_op <= req_op;
+					request_buffer_wsize <= wsize;
 					request_buffer_strb <= (wstrb << offset[2 : 0]);		//no need to change when cache organization change
 					request_buffer_data <= (wdata << ({offset[2 : 0], 3'b000}));
 					request_buffer_offset <= offset;
 					request_buffer_index <= index;
+					request_buffer_cacheable <= cacheable;
 				end
 			end
 		end
@@ -315,7 +341,7 @@ module cache #(
 	parameter BLOCK_LEN = BLOCK_SIZE << 3;		// *8
 	wire [WAY_NUM - 1 : 0] way_hit;
 	wire [BLOCK_LEN - 1 : 0] way_data [WAY_NUM - 1 : 0];
-	wire hit = |way_hit;
+	wire hit = |way_hit & request_buffer_cacheable;
 	wire whit = hit & request_buffer_op;
 	wire rhit = hit & ~request_buffer_op;
 	generate
@@ -357,6 +383,7 @@ module cache #(
 	reg [TAG_LEN +1 - 1 : 0] miss_buffer_replace_tag;
 	reg [INDEX_LEN - 1 : 0] miss_buffer_replace_index;
 	reg [DATA_LEN - 1 : 0] miss_buffer_rdata;
+	reg miss_buffer_rdata_valid;
 	always
 		@(posedge clk) begin
 			if(rst == 1'b1) begin
@@ -379,17 +406,18 @@ module cache #(
 	assign waxi_valid = m_state_replace;
 	//assign waxi_data = miss_buffer_replace_data;
 	assign waxi_data = replace_data;
-	assign waxi_size = `SIZE_L;
-	assign waxi_addr = {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
+	assign waxi_size = request_buffer_cacheable ? `SIZE_L : request_buffer_wsize;
+	assign waxi_addr = request_buffer_cacheable ? {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}} : {request_buffer_tag, request_buffer_index, request_buffer_offset};
 	//refill
 	//assign raxi_valid = m_state_refill & ~raxi_dlast;
-	assign raxi_valid = m_state_refill & ~raxi_dlast & (counter != BANK_NUM_PER_WAY);
-	assign raxi_size = `SIZE_L;
-	assign raxi_addr = {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}};
+	assign raxi_valid = m_state_refill & ~raxi_dlast & (counter != counter_max);
+	assign raxi_size = request_buffer_cacheable ? `SIZE_L : `SIZE_D;				//TODO may be only support 4 bytes access
+	assign raxi_addr = request_buffer_cacheable ? {request_buffer_tag, request_buffer_index, {OFFSET_LEN{1'b0}}} : {request_buffer_tag, request_buffer_index, request_buffer_offset};
 
-	reg [2 : 0]  counter;
+	reg [2 : 0] counter;
+	reg [2 : 0] counter_max;
     wire counter_rst = rst | ~m_state_refill;		//
-    wire counter_incr_en    = (counter != BANK_NUM_PER_WAY) & (raxi_dvalid); //incre in every data transfer
+    wire counter_incr_en    = (counter != counter_max) & (raxi_dvalid); //incre in every data transfer
     always @(posedge clk) begin
         if (counter_rst) begin
             counter <= 0;
@@ -405,7 +433,7 @@ module cache #(
 			if(rst == 1'b1) begin
 				miss_buffer_rdata <= {DATA_LEN{1'b0}};
 			end
-			else if((raxi_dvalid & m_state_refill) && counter == request_buffer_offset[`BANK_BITSEL]) begin
+			else if((raxi_dvalid & m_state_refill) && (counter == request_buffer_offset[`BANK_BITSEL] | request_buffer_cacheable == 1'b0)) begin
 				miss_buffer_rdata <= raxi_data;	
 			end
 		end
@@ -445,8 +473,7 @@ module cache #(
 
 	/*  output signal   */
 	assign addr_ok = (m_state_idle & conflict == 1'b0) | (m_state_lookup && hit && req_valid == 1'b1 && conflict == 1'b0);
-	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[`BANK_BITSEL] + 1 & request_buffer_op == 1'b0);
-	//assign rdata = {64{rhit}} & hit_data | miss_buffer_rdata;		//TODO
+	assign data_ok = (m_state_lookup & hit) | (m_state_lookup & (request_buffer_op == 1'b1)) | (m_state_refill & counter == request_buffer_offset[`BANK_BITSEL] + 1 & request_buffer_op == 1'b0) | (request_buffer_op == 1'b0 & request_buffer_cacheable == 1'b0 & counter == 3'b001 & m_state_refill);
 	assign rdata = rhit ?  hit_data : miss_buffer_rdata;		//cannot keep
 
 	

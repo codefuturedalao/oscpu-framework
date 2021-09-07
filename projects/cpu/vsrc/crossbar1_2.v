@@ -131,7 +131,7 @@ module crossbar1_2 # (
 			else begin
 			case(r_state)
 				IDLE: begin
-					if(m_axi_ar_valid_i == 1'b1 && m_axi_ar_addr_i <= 32'h0200_ffff && m_axi_ar_addr_i >= 32'h02000_0000 ) begin
+					if(m_axi_ar_valid_i == 1'b1 && m_axi_ar_addr_i <= 32'h0200_ffff && m_axi_ar_addr_i >= 32'h0200_0000 ) begin
 						r_state <= R_SLAVE0_ADDR;
 					end
 					else if(m_axi_ar_valid_i == 1'b1 ) begin
@@ -284,23 +284,23 @@ module crossbar1_2 # (
 
 	assign m_axi_r_valid_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_valid_i[0]
 						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_valid_i[1];
-	assign m_axi_r_resp_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_resp_i[0]
-						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_resp_i[1];
-	assign m_axi_r_data_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_data_i[0]
-						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_data_i[1];
+	assign m_axi_r_resp_o = {2{(r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data)}} & axi_r_resp_i[0]
+						|  {2{(r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data)}} & axi_r_resp_i[1];
+	assign m_axi_r_data_o = {AXI_DATA_WIDTH{(r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data)}} & axi_r_data_i[0]
+						|  {AXI_DATA_WIDTH{(r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data)}} & axi_r_data_i[1];
 	assign m_axi_r_last_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_last_i[0]
 						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_last_i[1];
-	assign m_axi_r_id_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_id_i[0]
-						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_id_i[1];
-	assign m_axi_r_user_o = (r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data) & axi_r_user_i[0]
-						|  (r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data) & axi_r_user_i[1];
+	assign m_axi_r_id_o = {AXI_ID_WIDTH{(r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data)}} & axi_r_id_i[0]
+						|  {AXI_ID_WIDTH{(r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data)}} & axi_r_id_i[1];
+	assign m_axi_r_user_o = {AXI_USER_WIDTH{(r_slave0_data | r_slave0_data_slave1_addr | r_slave0_data_slave0_addr | r_slave0_data_slave0_data & r_slave0_data_slave1_data)}} & axi_r_user_i[0]
+						|  {AXI_USER_WIDTH{(r_slave1_data | r_slave1_data_slave1_addr | r_slave0_addr_slave1_data | r_slave1_data_slave1_data)}} & axi_r_user_i[1];
 
 
 
 
 	/* write machine */
 	parameter [2 : 0] W_IDLE = 3'b000, W_SLAVE0_ADDR = 3'b001, W_SLAVE1_ADDR = 3'b010, W_SLAVE0_DATA = 3'b011, W_SLAVE1_DATA = 3'b100, W_SLAVE0_RESP = 3'b101, W_SLAVE1_RESP = 3'b110;
-	wire w_idle = w_state == W_IDLE, w_slave0_addr = w_state == W_SLAVE0_ADDR, w_slave1_addr = W_SLAVE1_ADDR, w_slave0_data = w_state == W_SLAVE0_DATA, w_slave1_data = w_state == W_SLAVE1_DATA, w_slave0_resp = w_state == W_SLAVE0_RESP, w_slave1_resp = w_state == W_SLAVE1_RESP;
+	wire w_idle = w_state == W_IDLE, w_slave0_addr = w_state == W_SLAVE0_ADDR, w_slave1_addr = w_state == W_SLAVE1_ADDR, w_slave0_data = w_state == W_SLAVE0_DATA, w_slave1_data = w_state == W_SLAVE1_DATA, w_slave0_resp = w_state == W_SLAVE0_RESP, w_slave1_resp = w_state == W_SLAVE1_RESP;
 	reg [2 : 0] w_state;
 	wire slave0_aw_hs = axi_aw_ready_i[0] & m_axi_aw_valid_i;
 	wire slave1_aw_hs = axi_aw_ready_i[1] & m_axi_aw_valid_i;
@@ -317,10 +317,10 @@ module crossbar1_2 # (
 			else begin
 					case(w_state)
 						W_IDLE: begin
-							if(m_axi_aw_valid_i == 1'b1 && m_axi_aw_addr_i <= 32'h0200_ffff && m_axi_aw_addr_i >= 32'h02000_0000 ) begin
+							if(m_axi_aw_valid_i == 1'b1 && m_axi_aw_addr_i <= 32'h0200_ffff && m_axi_aw_addr_i >= 32'h0200_0000 ) begin
 								w_state <= W_SLAVE0_ADDR;
 							end
-							else if(m_axi_ar_valid_i == 1'b1 ) begin
+							else if(m_axi_aw_valid_i == 1'b1 ) begin
 								w_state <= W_SLAVE1_ADDR;
 							end
 						end
@@ -392,13 +392,13 @@ module crossbar1_2 # (
 						|	 (w_slave1_data & axi_w_ready_i[1]);
 
 	assign axi_w_valid_o[0] = (w_slave0_data & m_axi_w_valid_i);
-	assign axi_w_data_o[0] = (w_slave0_data & m_axi_w_data_i);
-	assign axi_w_strb_o[0] = (w_slave0_data & m_axi_w_strb_i);
+	assign axi_w_data_o[0] = ({AXI_DATA_WIDTH{w_slave0_data}} & m_axi_w_data_i);
+	assign axi_w_strb_o[0] = ({8{w_slave0_data}} & m_axi_w_strb_i);
 	assign axi_w_last_o[0] = (w_slave0_data & m_axi_w_last_i);
 
 	assign axi_w_valid_o[1] = (w_slave1_data & m_axi_w_valid_i);
-	assign axi_w_data_o[1] = (w_slave1_data & m_axi_w_data_i);
-	assign axi_w_strb_o[1] = (w_slave1_data & m_axi_w_strb_i);
+	assign axi_w_data_o[1] = ({AXI_DATA_WIDTH{w_slave1_data}} & m_axi_w_data_i);
+	assign axi_w_strb_o[1] = ({8{w_slave1_data}} & m_axi_w_strb_i);
 	assign axi_w_last_o[1] = (w_slave1_data & m_axi_w_last_i);
 
 	/* resp */
@@ -409,10 +409,10 @@ module crossbar1_2 # (
 						|	 (w_slave1_resp & axi_b_valid_i[1]);
 	assign m_axi_b_resp_o = (w_slave0_resp & axi_b_resp_i[0])
 						|	 (w_slave1_resp & axi_b_resp_i[1]);
-	assign m_axi_b_id_o = (w_slave0_resp & axi_b_id_i[0])
-						|	 (w_slave1_resp & axi_b_id_i[1]);
-	assign m_axi_b_user_o = (w_slave0_resp & axi_b_user_i[0])
-						|	 (w_slave1_resp & axi_b_user_i[1]);
+	assign m_axi_b_id_o = ({AXI_ID_WIDTH{w_slave0_resp}} & axi_b_id_i[0])
+						|	 ({AXI_ID_WIDTH{w_slave1_resp}} & axi_b_id_i[1]);
+	assign m_axi_b_user_o = ({2{w_slave0_resp}} & axi_b_user_i[0])
+						|	 ({2{w_slave1_resp}} & axi_b_user_i[1]);
 endmodule
 
 

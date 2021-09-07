@@ -26,6 +26,7 @@ module lsu(
 	output wire me_stall_req,
 	output wire me_req_valid,
 	output wire me_req_op,
+	output wire cacheable,
 	output wire [`REG_BUS] me_addr,
 	output wire [7 : 0] me_wstrb,
 	output wire	[`REG_BUS] me_wdata,
@@ -33,6 +34,7 @@ module lsu(
 );
 
 assign mem_data_read_o = mem_data_read_i;
+assign cacheable = me_addr >= 32'h8000_0000;
 
 reg [`REG_BUS] me_wdata_r;
 reg [`REG_BUS] me_addr_r;
