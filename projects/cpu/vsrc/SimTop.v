@@ -88,7 +88,7 @@ wire mem_wvalid;
 wire mem_rready;
 wire mem_wready;
 wire [63:0] mem_data_read;
-wire [63:0] mem_data_write;
+wire [`CACHE_BLOCK_DATA_WIDTH - 1 : 0] mem_data_write;
 wire [63:0] mem_raddr;
 wire [63:0] mem_waddr;
 wire [2:0] mem_rsize;
@@ -105,6 +105,7 @@ wire [`REG_BUS] wb_inst;
 wire wb_inst_valid;
 wire [`REG_BUS] regs[0 : 31];		//directly from regfile
 
+wire [`MXLEN-1 : 0] mscratch;
 wire [`MXLEN-1 : 0] mstatus;
 wire [`MXLEN-1 : 0] mcause;
 wire [`MXLEN-1 : 0] mepc;
@@ -150,6 +151,8 @@ rvcpu Rvcpu(
 	.diff_wb_inst(wb_inst),
 	.diff_wb_inst_valid(wb_inst_valid),
 	.regs(regs),
+
+	.diff_mscratch(mscratch),
 	.diff_mstatus(mstatus),
 	.diff_mcause(mcause),
 	.diff_mepc(mepc),
@@ -203,52 +206,53 @@ rvcpu Rvcpu(
     wire [`AXI_ID_WIDTH-1:0] r_id;
     wire [`AXI_USER_WIDTH-1:0] r_user;
 
-    assign aw_ready                                 = `AXI_TOP_INTERFACE(aw_ready);
-    assign `AXI_TOP_INTERFACE(aw_valid)             = aw_valid;
-    assign `AXI_TOP_INTERFACE(aw_bits_addr)         = aw_addr;
-    assign `AXI_TOP_INTERFACE(aw_bits_prot)         = aw_prot;
-    assign `AXI_TOP_INTERFACE(aw_bits_id)           = aw_id;
-    assign `AXI_TOP_INTERFACE(aw_bits_user)         = aw_user;
-    assign `AXI_TOP_INTERFACE(aw_bits_len)          = aw_len;
-    assign `AXI_TOP_INTERFACE(aw_bits_size)         = aw_size;
-    assign `AXI_TOP_INTERFACE(aw_bits_burst)        = aw_burst;
-    assign `AXI_TOP_INTERFACE(aw_bits_lock)         = aw_lock;
-    assign `AXI_TOP_INTERFACE(aw_bits_cache)        = aw_cache;
-    assign `AXI_TOP_INTERFACE(aw_bits_qos)          = aw_qos;
+    assign slave_aw_ready[1]                        = `AXI_TOP_INTERFACE(aw_ready);
+    assign `AXI_TOP_INTERFACE(aw_valid)             = slave_aw_valid[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_addr)         = slave_aw_addr[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_prot)         = slave_aw_prot[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_id)           = slave_aw_id[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_user)         = slave_aw_user[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_len)          = slave_aw_len[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_size)         = slave_aw_size[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_burst)        = slave_aw_burst[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_lock)         = slave_aw_lock[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_cache)        = slave_aw_cache[1];
+    assign `AXI_TOP_INTERFACE(aw_bits_qos)          = slave_aw_qos[1];
 
-	assign w_ready 									= `AXI_TOP_INTERFACE(w_ready);
-	assign `AXI_TOP_INTERFACE(w_valid)				= w_valid;
-	assign `AXI_TOP_INTERFACE(w_bits_data)			= w_data;
-	assign `AXI_TOP_INTERFACE(w_bits_strb)			= w_strb;
-	assign `AXI_TOP_INTERFACE(w_bits_last)			= w_last;
-	assign `AXI_TOP_INTERFACE(w_bits_id)			= w_id;
+	assign slave_w_ready[1]							= `AXI_TOP_INTERFACE(w_ready);
+	assign `AXI_TOP_INTERFACE(w_valid)				= slave_w_valid[1];
+	assign `AXI_TOP_INTERFACE(w_bits_data)[0]		= slave_w_data[1];
+	assign `AXI_TOP_INTERFACE(w_bits_strb)			= slave_w_strb[1];
+	assign `AXI_TOP_INTERFACE(w_bits_last)			= slave_w_last[1];
+	//assign `AXI_TOP_INTERFACE(w_bits_id)			= slave_w_id[1];
+	assign `AXI_TOP_INTERFACE(w_bits_id)			= 0;
 
-	assign `AXI_TOP_INTERFACE(b_ready)				= b_ready;
-	assign b_valid 									= `AXI_TOP_INTERFACE(b_valid);
-	assign b_resp									= `AXI_TOP_INTERFACE(b_bits_resp);
-	assign b_id										= `AXI_TOP_INTERFACE(b_bits_id);
-	assign b_user									= `AXI_TOP_INTERFACE(b_bits_user);
+	assign `AXI_TOP_INTERFACE(b_ready)				= slave_b_ready[1];
+	assign slave_b_valid[1]							= `AXI_TOP_INTERFACE(b_valid);
+	assign slave_b_resp[1]							= `AXI_TOP_INTERFACE(b_bits_resp);
+	assign slave_b_id[1]							= `AXI_TOP_INTERFACE(b_bits_id);
+	assign slave_b_user[1]							= `AXI_TOP_INTERFACE(b_bits_user);
 
-    assign ar_ready                                 = `AXI_TOP_INTERFACE(ar_ready);
-    assign `AXI_TOP_INTERFACE(ar_valid)             = ar_valid;
-    assign `AXI_TOP_INTERFACE(ar_bits_addr)         = ar_addr;
-    assign `AXI_TOP_INTERFACE(ar_bits_prot)         = ar_prot;
-    assign `AXI_TOP_INTERFACE(ar_bits_id)           = ar_id;
-    assign `AXI_TOP_INTERFACE(ar_bits_user)         = ar_user;
-    assign `AXI_TOP_INTERFACE(ar_bits_len)          = ar_len;
-    assign `AXI_TOP_INTERFACE(ar_bits_size)         = ar_size;
-    assign `AXI_TOP_INTERFACE(ar_bits_burst)        = ar_burst;
-    assign `AXI_TOP_INTERFACE(ar_bits_lock)         = ar_lock;
-    assign `AXI_TOP_INTERFACE(ar_bits_cache)        = ar_cache;
-    assign `AXI_TOP_INTERFACE(ar_bits_qos)          = ar_qos;
+    assign slave_ar_ready[1]                        = `AXI_TOP_INTERFACE(ar_ready);
+    assign `AXI_TOP_INTERFACE(ar_valid)             = slave_ar_valid[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_addr)         = slave_ar_addr[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_prot)         = slave_ar_prot[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_id)           = slave_ar_id[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_user)         = slave_ar_user[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_len)          = slave_ar_len[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_size)         = slave_ar_size[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_burst)        = slave_ar_burst[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_lock)         = slave_ar_lock[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_cache)        = slave_ar_cache[1];
+    assign `AXI_TOP_INTERFACE(ar_bits_qos)          = slave_ar_qos[1];
     
-    assign `AXI_TOP_INTERFACE(r_ready)              = r_ready;
-    assign r_valid                                  = `AXI_TOP_INTERFACE(r_valid);
-    assign r_resp                                   = `AXI_TOP_INTERFACE(r_bits_resp);
-    assign r_data                                   = `AXI_TOP_INTERFACE(r_bits_data)[0];
-    assign r_last                                   = `AXI_TOP_INTERFACE(r_bits_last);
-    assign r_id                                     = `AXI_TOP_INTERFACE(r_bits_id);
-    assign r_user                                   = `AXI_TOP_INTERFACE(r_bits_user);
+    assign `AXI_TOP_INTERFACE(r_ready)              = slave_r_ready[1];
+    assign slave_r_valid[1]                         = `AXI_TOP_INTERFACE(r_valid);
+    assign slave_r_resp[1]                          = `AXI_TOP_INTERFACE(r_bits_resp);
+    assign slave_r_data[1]                          = `AXI_TOP_INTERFACE(r_bits_data)[0];
+    assign slave_r_last[1]                          = `AXI_TOP_INTERFACE(r_bits_last);
+    assign slave_r_id[1]                            = `AXI_TOP_INTERFACE(r_bits_id);
+    assign slave_r_user[1]                          = `AXI_TOP_INTERFACE(r_bits_user);
 
     axi_rw u_axi_rw (
         .clock                          (clock),
@@ -333,6 +337,252 @@ rvcpu Rvcpu(
         .axi_r_id_i                     (r_id),
         .axi_r_user_i                   (r_user)
     );
+parameter AXI_DATA_WIDTH    = 64;
+parameter AXI_ADDR_WIDTH    = 64;
+parameter AXI_ID_WIDTH      = 4;
+parameter AXI_USER_WIDTH    = 1;
+
+wire                              slave_aw_ready [1 : 0];
+wire                              slave_aw_valid [1 : 0];
+wire [AXI_ADDR_WIDTH-1:0]         slave_aw_addr [1 : 0];
+wire [2:0]                        slave_aw_prot [1 : 0];
+wire [AXI_ID_WIDTH-1:0]           slave_aw_id [1 : 0];
+wire [AXI_USER_WIDTH-1:0]         slave_aw_user [1 : 0];
+wire [7:0]                        slave_aw_len [1 : 0];
+wire [2:0]                        slave_aw_size [1 : 0];
+wire [1:0]                        slave_aw_burst [1 : 0];
+wire                              slave_aw_lock [1 : 0];
+wire [3:0]                        slave_aw_cache [1 : 0];
+wire [3:0]                        slave_aw_qos [1 : 0];
+
+wire                               slave_w_ready [1 : 0];
+wire                              slave_w_valid [1 : 0];
+wire [AXI_DATA_WIDTH-1:0]         slave_w_data [1 : 0];
+wire [AXI_DATA_WIDTH/8-1:0]       slave_w_strb [1 : 0];
+wire                              slave_w_last [1 : 0];
+//wire [AXID_WIDTH-1:0]           slave_w_id [1 : 0];
+
+wire                              slave_b_ready [1 : 0];
+wire                               slave_b_valid [1 : 0];
+wire  [1:0]                        slave_b_resp [1 : 0];
+wire  [AXI_ID_WIDTH-1:0]           slave_b_id [1 : 0];
+wire  [AXI_USER_WIDTH-1:0]         slave_b_user [1 : 0];
+
+wire                               slave_ar_ready [1 : 0];
+wire                              slave_ar_valid [1 : 0];
+wire [AXI_ADDR_WIDTH-1:0]         slave_ar_addr [1 : 0];
+wire [2:0]                        slave_ar_prot [1 : 0];
+wire [AXI_ID_WIDTH-1:0]           slave_ar_id [1 : 0];			//0 for inst; 1 for data
+wire [AXI_USER_WIDTH-1:0]         slave_ar_user [1 : 0];
+wire [7:0]                        slave_ar_len [1 : 0];			//burst_length = len[7 : 0] + 1		INCR : 1-256, other : 1-16
+wire [2:0]                        slave_ar_size [1 : 0];			//011 for 8bytes, 010 for 4 bytes
+wire [1:0]                        slave_ar_burst [1 : 0];
+wire                              slave_ar_lock [1 : 0];
+wire [3:0]                        slave_ar_cache [1 : 0];			//
+wire [3:0]                        slave_ar_qos [1 : 0];			//default 4'b0000 indicates that interface is not participating in any Qos scheme
+
+wire                              slave_r_ready [1 : 0];
+wire                               slave_r_valid [1 : 0];
+wire  [1:0]                        slave_r_resp [1 : 0];
+wire  [AXI_DATA_WIDTH-1:0]         slave_r_data [1 : 0];
+wire                               slave_r_last [1 : 0];
+wire  [AXI_ID_WIDTH-1:0]           slave_r_id [1 : 0];				//useless for now
+wire  [AXI_USER_WIDTH-1:0]         slave_r_user [1 : 0];
+// interconnect
+crossbar1_2 Crossbar1_2(
+	.clk(clock),
+	.rst(reset),
+	
+	.m_axi_aw_ready_o(aw_ready),
+	.m_axi_aw_valid_i(aw_valid),
+	.m_axi_aw_addr_i(aw_addr),
+	.m_axi_aw_prot_i(aw_prot),
+	.m_axi_aw_id_i(aw_id),
+	.m_axi_aw_user_i(aw_user),
+	.m_axi_aw_len_i(aw_len),
+	.m_axi_aw_size_i(aw_size),
+	.m_axi_aw_burst_i(aw_burst),
+	.m_axi_aw_lock_i(aw_lock),
+	.m_axi_aw_cache_i(aw_cache),
+	.m_axi_aw_qos_i(aw_qos),
+
+	.m_axi_w_ready_o(w_ready),
+	.m_axi_w_valid_i(w_valid),
+	.m_axi_w_data_i(w_data[0]),
+	.m_axi_w_strb_i(w_strb),
+	.m_axi_w_last_i(w_last),
+	
+	.m_axi_b_ready_i(b_ready),
+	.m_axi_b_valid_o(b_valid),
+	.m_axi_b_resp_o(b_resp),
+	.m_axi_b_id_o(b_id),
+	.m_axi_b_user_o(b_user),
+
+	.m_axi_ar_ready_o(ar_ready),
+	.m_axi_ar_valid_i(ar_valid),
+	.m_axi_ar_addr_i(ar_addr),
+	.m_axi_ar_prot_i(ar_prot),
+	.m_axi_ar_id_i(ar_id),
+	.m_axi_ar_user_i(ar_user),
+	.m_axi_ar_len_i(ar_len),
+	.m_axi_ar_size_i(ar_size),
+	.m_axi_ar_burst_i(ar_burst),
+	.m_axi_ar_lock_i(ar_lock),
+	.m_axi_ar_cache_i(ar_cache),
+	.m_axi_ar_qos_i(ar_qos),
+
+	.m_axi_r_ready_i(r_ready),
+	.m_axi_r_valid_o(r_valid),
+	.m_axi_r_resp_o(r_resp),
+	.m_axi_r_data_o(r_data),
+	.m_axi_r_last_o(r_last),
+	.m_axi_r_id_o(r_id),
+	.m_axi_r_user_o(r_user),
+
+	.axi_aw_ready_i(slave_aw_ready),
+	.axi_aw_valid_o(slave_aw_valid),
+	.axi_aw_addr_o(slave_aw_addr),
+	.axi_aw_prot_o(slave_aw_prot),
+	.axi_aw_id_o(slave_aw_id),
+	.axi_aw_user_o(slave_aw_user),
+	.axi_aw_len_o(slave_aw_len),
+	.axi_aw_size_o(slave_aw_size),
+	.axi_aw_burst_o(slave_aw_burst),
+    .axi_aw_lock_o(slave_aw_lock),
+    .axi_aw_cache_o(slave_aw_cache),
+    .axi_aw_qos_o(slave_aw_qos),
+
+    .axi_w_ready_i(slave_w_ready),
+    .axi_w_valid_o(slave_w_valid),
+    .axi_w_data_o(slave_w_data),
+    .axi_w_strb_o(slave_w_strb),
+    .axi_w_last_o(slave_w_last),
+    //.axi_w_id_o(slave_w_id),
+    
+    .axi_b_ready_o(slave_b_ready),
+    .axi_b_valid_i(slave_b_valid),
+    .axi_b_resp_i(slave_b_resp),
+    .axi_b_id_i(slave_b_id),
+    .axi_b_user_i(slave_b_user),
+
+    .axi_ar_ready_i(slave_ar_ready),
+    .axi_ar_valid_o(slave_ar_valid),
+    .axi_ar_addr_o(slave_ar_addr),
+    .axi_ar_prot_o(slave_ar_prot),
+    .axi_ar_id_o(slave_ar_id),
+    .axi_ar_user_o(slave_ar_user),
+    .axi_ar_len_o(slave_ar_len),			//burst_length = len[7 : 0] + 1		INCR : 1-256, other : 1-16
+    .axi_ar_size_o(slave_ar_size),			//011 for 8bytes, 010 for 4 bytes
+    .axi_ar_burst_o(slave_ar_burst),
+    .axi_ar_lock_o(slave_ar_lock),
+    .axi_ar_cache_o(slave_ar_cache),
+    .axi_ar_qos_o(slave_ar_qos),			//default 4'b0000 indicates that interface is not participating in any Qos scheme
+    
+    .axi_r_ready_o(slave_r_ready),
+    .axi_r_valid_i(slave_r_valid),
+    .axi_r_resp_i(slave_r_resp),
+    .axi_r_data_i(slave_r_data),
+    .axi_r_last_i(slave_r_last),
+    .axi_r_id_i(slave_r_id),				//useless for now
+    .axi_r_user_i(slave_r_user)
+	
+);
+
+// axi_slave + clint
+axi_slave Axi_slave(
+	.clk(clock),
+	.rst(reset),
+	
+	.rw_valid_o(clint_valid),
+	.rw_ready_i(clint_ready),
+	.rw_req_o(clint_req),
+	.data_read_i(clint_data_read),
+	.data_write_o(clint_data_write),
+	.rw_addr_o(clint_addr),
+	//rw_size_o(clint_size),
+	.data_write_strb_o(clint_wstrb),
+	.rw_resp_i(clint_resp),
+
+
+	.axi_aw_ready_o(slave_aw_ready[0]),
+	.axi_aw_valid_i(slave_aw_valid[0]),
+	.axi_aw_addr_i(slave_aw_addr[0]),
+	.axi_aw_prot_i(slave_aw_prot[0]),
+	.axi_aw_id_i(slave_aw_id[0]),
+	.axi_aw_user_i(slave_aw_user[0]),
+	.axi_aw_len_i(slave_aw_len[0]),
+	.axi_aw_size_i(slave_aw_size[0]),
+	.axi_aw_burst_i(slave_aw_burst[0]),
+	.axi_aw_lock_i(slave_aw_lock[0]),
+	.axi_aw_cache_i(slave_aw_cache[0]),
+	.axi_aw_qos_i(slave_aw_qos[0]),
+	//.axi_aw_region_i(slave_aw_region),
+
+	.axi_w_ready_o(slave_w_ready[0]),
+	.axi_w_valid_i(slave_w_valid[0]),
+	.axi_w_data_i(slave_w_data[0]),
+	.axi_w_strb_i(slave_w_strb[0]),
+	.axi_w_last_i(slave_w_last[0]),
+	//.axi_w_user_i(slave_w_user[0]),
+
+	.axi_b_ready_i(slave_b_ready[0]),
+	.axi_b_valid_o(slave_b_valid[0]),
+	.axi_b_resp_o(slave_b_resp[0]),
+	.axi_b_id_o(slave_b_id[0]),
+	.axi_b_user_o(slave_b_user[0]),
+
+	.axi_ar_ready_o(slave_ar_ready[0]),
+	.axi_ar_valid_i(slave_ar_valid[0]),
+	.axi_ar_addr_i(slave_ar_addr[0]),
+	.axi_ar_prot_i(slave_ar_prot[0]),
+	.axi_ar_id_i(slave_ar_id[0]),
+	.axi_ar_user_i(slave_ar_user[0]),
+	.axi_ar_len_i(slave_ar_len[0]),
+	.axi_ar_size_i(slave_ar_size[0]),
+	.axi_ar_burst_i(slave_ar_burst[0]),
+	.axi_ar_lock_i(slave_ar_lock[0]),
+	.axi_ar_cache_i(slave_ar_cache[0]),
+	.axi_ar_qos_i(slave_ar_qos[0]),
+	//.axi_ar_region_i(slave_ar_region[0]),
+
+	.axi_r_ready_i(slave_r_ready[0]),
+	.axi_r_valid_o(slave_r_valid[0]),
+	.axi_r_resp_o(slave_r_resp[0]),
+	.axi_r_data_o(slave_r_data[0]),
+	.axi_r_last_o(slave_r_last[0]),
+	.axi_r_id_o(slave_r_id[0]),
+	.axi_r_user_o(slave_r_user[0])
+);
+
+wire clint_valid;
+wire clint_req;
+wire [63 : 0] clint_data_write;
+wire [63 : 0] clint_addr;
+wire [63 : 0] clint_data_read;
+wire [7 : 0] clint_wstrb;
+
+wire clint_ready;
+wire [1 : 0] clint_resp;
+wire clint_time_irq;
+wire clint_sip;
+
+
+clint Clint(
+	.clk(clock),
+	.rst(reset),
+	
+	.valid_i(clint_valid),
+	.req_i(clint_req),
+	.data_write_i(clint_data_write),
+	.addr_i(clint_addr),
+	.wstrb_i(clint_wstrb),
+	
+	.ready_o(clint_ready),
+	.data_read_o(clint_data_read),
+	.resp_o(clint_resp),
+	.time_irq_o(clint_time_irq),
+	.sip_o(clint_sip)
+);
 
 // Difftest
 reg cmt_wen;
@@ -449,7 +699,7 @@ DifftestCSRState DifftestCSRState(
   .satp               (0),
   .mip                (0),
   .mie                (0),
-  .mscratch           (0),
+  .mscratch           (mscratch),
   .sscratch           (0),
   .mideleg            (0),
   .medeleg            (0)

@@ -25,7 +25,7 @@ module rvcpu(
 	input wire [1 : 0] mem_rresp,
 	input wire [1 : 0] mem_wresp,
 	input wire  [`REG_BUS]  mem_data_read,
-	output wire  [`REG_BUS]  mem_data_write,
+	output wire  [`CACHE_BLOCK_DATA_WIDTH - 1 : 0]  mem_data_write,
 	output wire mem_rvalid,
 	output wire mem_wvalid,
 	input wire mem_wready,
@@ -44,6 +44,7 @@ module rvcpu(
 	output wire diff_wb_inst_valid,
 	output wire [`REG_BUS] regs[0 : 31],
 
+	output wire [`MXLEN-1 : 0] diff_mscratch,
 	output wire [`MXLEN-1 : 0] diff_mstatus,
 	output wire [`MXLEN-1 : 0] diff_mcause,
 	output wire [`MXLEN-1 : 0] diff_mepc,
@@ -96,6 +97,9 @@ if_stage If_stage(
 cache ICache(
 	.clk(clk),
 	.rst(rst),
+`ifdef DEBUG
+	.pc(),
+`endif
 	
 	.req_valid(if_req_valid),
 	.req_op(if_req_op),
@@ -419,6 +423,7 @@ wire div_ready;
 wire [127 : 0] div_result;
 
 exe_stage Exe_stage(
+	.clk(clk),
 	.rst(rst),
   	.alu_op(ex_alu_op),
 	.pc_src(ex_pc_src),
@@ -427,6 +432,7 @@ exe_stage Exe_stage(
 	.alu_op2_src(ex_alu_op2_src),
 	.imm(ex_imm),
 	.stall_req_i(exe_stall_req_lsu),
+	.stall(id_ex_stall),
 	
 	.rs1_src(rs1_src),
 	.rs2_src(rs2_src),
@@ -640,6 +646,9 @@ wire [`REG_BUS] me_mem_data_read;
 cache DCache(
 	.clk(clk),
 	.rst(rst),
+`ifdef DEBUG
+	.pc(ex_pc),
+`endif
 	
 	.req_valid(mem_req_valid),
 	.req_op(mem_req_op),
@@ -801,6 +810,7 @@ csr Csr(
 	.exception_target_pc(exception_target_pc),
 
 	//difftest
+	.diff_mscratch(diff_mscratch),
 	.diff_mstatus(diff_mstatus),
 	.diff_mcause(diff_mcause),
 	.diff_mepc(diff_mepc),

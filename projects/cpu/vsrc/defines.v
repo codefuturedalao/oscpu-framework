@@ -1,6 +1,7 @@
 
 `timescale 1ns / 1ps
 `define CACHE
+`define DEBUG
 
 `define PC_START   64'h00000000_80000000  
 `define PC_START_MINUS4   64'h00000000_7ffffffC  
@@ -181,6 +182,8 @@
 `define CSR_MTVEC 12'h305
 `define CSR_MEPC  12'h341
 `define CSR_MCAUSE 12'h342
+`define CSR_MHARTID 12'hf14
+`define CSR_MSCRATCH 12'h340
 
 `define INST_ADDR_MISALIGN 5'b0_0000
 `define INST_ACCESS_FAULT  5'b0_0001

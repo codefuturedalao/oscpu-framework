@@ -18,6 +18,7 @@ module csr(
 	output wire exception_transfer,
 	output wire [`REG_BUS] exception_target_pc,
 
+	output wire [`MXLEN-1 : 0] diff_mscratch,
 	output wire [`MXLEN-1 : 0] diff_mstatus,
 	output wire [`MXLEN-1 : 0] diff_mcause,
 	output wire [`MXLEN-1 : 0] diff_mepc,
@@ -226,16 +227,41 @@ module csr(
 			end
 		end
 
+	reg [`MXLEN-1 : 0] mscratch;		//read write
+	wire mscratch_ren = (csr_addr == `CSR_MSCRATCH) & csr_rena;
+	wire mscratch_wen = (csr_addr == `CSR_MSCRATCH) & csr_wena;
+	always
+		@(posedge clk) begin
+			if(mscratch_wen) begin
+				case(csr_op)
+					`CSR_RW: begin
+						mscratch <= csr_wdata;
+					end
+					`CSR_RS: begin
+						mscratch <= csr_wdata | mscratch;
+					end
+					`CSR_RC: begin
+						mscratch <= ~csr_wdata & mscratch;
+					end
+					default: begin
+						mscratch <= mscratch;
+					end
+				endcase
+			end
+		end
+
 	assign csr_data = {64{cycle_ren}} & cycle
 					| {64{mstatus_ren}} & {{`MXLEN-13{1'b0}}, mstatus_pp, mstatus_pie, mstatus_ie}
 					| {64{mtvec_ren}} & mtvec
 					| {64{mepc_ren}} & mepc
-					| {64{mcause_ren}} & mcause;
+					| {64{mcause_ren}} & mcause
+					| {64{mscratch_ren}} & mscratch;
 
 	assign diff_mstatus = {{`MXLEN-13{1'b0}}, mstatus_pp, mstatus_pie, mstatus_ie};
 	assign diff_mtvec = mtvec;
 	assign diff_mcause = mcause;
 	assign diff_mepc = mepc;
+	assign diff_mscratch = mscratch;
 
 
 endmodule

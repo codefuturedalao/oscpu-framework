@@ -1,6 +1,7 @@
 `include "defines.v"
 
 module exe_stage(
+	input wire clk,
   	input wire rst,
 	input wire [`ALU_OP_BUS] alu_op,
 	input wire pc_src,
@@ -9,6 +10,7 @@ module exe_stage(
 	input wire [1 : 0] alu_op2_src,
 	input wire [`REG_BUS] imm,
 	input wire stall_req_i,
+	input wire [1 : 0] stall,
 	
 	input wire [1 : 0] rs1_src,
 	input wire [1 : 0] rs2_src,
@@ -43,6 +45,36 @@ always
 		end
 	end
 
+wire [`REG_BUS] new_rs1_data_t;
+wire [`REG_BUS] new_rs2_data_t;
+
+reg [`REG_BUS] new_rs1_data_r;
+reg [`REG_BUS] new_rs2_data_r;
+
+reg flag;
+assign new_rs1_data = flag ? new_rs1_data_r : new_rs1_data_t;
+assign new_rs2_data = flag ? new_rs2_data_r : new_rs2_data_t;
+
+
+always
+	@(posedge clk) begin
+		if(rst == 1'b1) begin
+			flag <= 1'b0;
+			new_rs1_data_r <= `ZERO_WORD;
+			new_rs2_data_r <= `ZERO_WORD;
+		end
+		else if(stall == `STALL_KEEP && flag == 1'b0) begin
+			flag <= 1'b1;
+			new_rs1_data_r <= new_rs1_data_t;
+			new_rs2_data_r <= new_rs2_data_t;
+		end
+		else if(stall != `STALL_KEEP) begin
+			flag <= 1'b0;
+			new_rs1_data_r <= `ZERO_WORD;
+			new_rs2_data_r <= `ZERO_WORD;
+		end
+	end
+
 wire overflow;
 wire sign;
 wire cout;
@@ -53,12 +85,12 @@ reg [`REG_BUS] op1_add;
 reg [`REG_BUS] op2_add; 
 wire [`REG_BUS] result_add; 
 
-wire [`REG_BUS]op1;
-wire [`REG_BUS]op2;
+wire [`REG_BUS] op1;
+wire [`REG_BUS] op2;
 
 /* select new_rs1_data and new_rs2_data to solve data hazard */
-rs1_mux Rs1_mux(.ex_rs1_data(ex_rs1_data), .me_alu_result(me_alu_result), .wb_rd_data(wb_rd_data), .rs1_src(rs1_src), .new_rs1_data(new_rs1_data));
-rs2_mux Rs2_mux(.ex_rs2_data(ex_rs2_data), .me_alu_result(me_alu_result), .wb_rd_data(wb_rd_data), .rs2_src(rs2_src), .new_rs2_data(new_rs2_data)); 
+rs1_mux Rs1_mux(.ex_rs1_data(ex_rs1_data), .me_alu_result(me_alu_result), .wb_rd_data(wb_rd_data), .rs1_src(rs1_src), .new_rs1_data(new_rs1_data_t));
+rs2_mux Rs2_mux(.ex_rs2_data(ex_rs2_data), .me_alu_result(me_alu_result), .wb_rd_data(wb_rd_data), .rs2_src(rs2_src), .new_rs2_data(new_rs2_data_t)); 
 /* select op1 and op2 */
 op1_mux Op1_mux(.new_rs1_data(new_rs1_data), .pc(pc), .alu_op1_src(alu_op1_src), .op1(op1));
 op2_mux Op2_mux(.new_rs2_data(new_rs2_data), .imm(imm), .alu_op2_src(alu_op2_src), .op2(op2));

@@ -13,6 +13,10 @@ module cache #(
 	input wire clk,
 	input wire rst,
 
+`ifdef DEBUG
+	input wire [`REG_BUS] pc,
+`endif
+
 	input wire req_valid,
 	input wire req_op,
 	input wire [INDEX_LEN - 1 : 0] index,
@@ -37,6 +41,21 @@ module cache #(
 	output wire [BLOCK_LEN - 1 : 0] waxi_data,		//TODO BLOCK_LEN define
 	input wire waxi_ready
 );
+
+`ifdef DEBUG
+	integer f;
+	initial begin
+  		f = $fopen("output.txt","w");
+	end
+
+	always
+		@(posedge clk) begin
+			if(req_wvalid) begin
+				$fwrite(f, "[%x] : write to memory[%x] = %x\n", pc, {tag,index,offset}, wdata);
+			end
+		end
+
+`endif
 	parameter SET_NUM = 1 << INDEX_LEN;
 	parameter DATA_SIZE = DATA_LEN / 8;
 	parameter BANK_NUM_PER_WAY = BLOCK_SIZE  / DATA_SIZE;
@@ -165,6 +184,7 @@ module cache #(
 				//assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[3] == (i & 1'b1))) 
 				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid)  && (offset[`BANK_BITSEL] == (i & `BANK_MASK))) 			//store don't read data, only read tag
 				| (w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)
+				| (m_state_miss && waxi_ready == 1'b1 && (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1))
 				| (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)) ? `CHIP_EN : `CHIP_DI;	
 
 			end
@@ -184,6 +204,7 @@ module cache #(
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_addr
 				assign data_addr[i] = ({INDEX_LEN{((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid) && (offset[`BANK_BITSEL] == (i & `BANK_MASK)))}} & index) 
 								| ({INDEX_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_index)
+								| ({INDEX_LEN{(m_state_miss && waxi_ready == 1'b1 && (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1))}} & miss_buffer_replace_index)
 								| ({INDEX_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1))}} & miss_buffer_replace_index);
 
 				assign data_din[i] = ({DATA_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_data)
@@ -320,10 +341,11 @@ module cache #(
 	//wire [WAY_LEN - 1 : 0] replace_way_sel = way_sel == 2'b01 ? 1'b0 : 1'b1;
 	//miss
 	wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
-	wire way_valid = (way_sel[0] & tag_dout[TAG_LEN]) | (way_sel[1] & tag_dout[TAG_LEN]);
+	wire way_valid = (way_sel[0] & tag_dout[0][TAG_LEN]) | (way_sel[1] & tag_dout[1][TAG_LEN]);
 
-	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
+	/*wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
 											| {BLOCK_LEN{way_sel[1]}} & (way_data[1]);
+	*/
 	wire [TAG_LEN + 1 - 1 : 0] replace_tag = {TAG_LEN{way_sel[0]}} & tag_dout[0]
 										|  {TAG_LEN{way_sel[1]}} & tag_dout[1];
 	wire [INDEX_LEN - 1 : 0] replace_index = request_buffer_index;
@@ -345,14 +367,18 @@ module cache #(
 			end
 			else if(hit == 1'b0 && m_state_lookup == 1'b1) begin
 				miss_buffer_replace_way <= way_sel;
-				miss_buffer_replace_data <= replace_data;
+				//miss_buffer_replace_data <= replace_data;
 				miss_buffer_replace_tag <=  replace_tag;
 				miss_buffer_replace_index <= replace_index;
 			end
 		end
 	//replace
+	wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{miss_buffer_replace_way[0]}} & (way_data[0])
+											| {BLOCK_LEN{miss_buffer_replace_way[1]}} & (way_data[1]);
+	
 	assign waxi_valid = m_state_replace;
-	assign waxi_data = miss_buffer_replace_data;
+	//assign waxi_data = miss_buffer_replace_data;
+	assign waxi_data = replace_data;
 	assign waxi_size = `SIZE_L;
 	assign waxi_addr = {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}};
 	//refill

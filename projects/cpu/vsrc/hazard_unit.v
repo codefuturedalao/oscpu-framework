@@ -104,9 +104,9 @@ module hazard_unit(
 													(control_transfer_r & if_stall_req)? {`STALL_KEEP, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :  //control_transfer is 1 means no exception in wb stage, so release the stage	TODO:make sure no stage in mem, maybe doesn't matter
 													(control_transfer_r & ~if_stall_req)? {`STALL_NEXT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :	//control hazard
 
-																		mem_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP} :	//load and store
+																		mem_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :	//load and store
 																		//exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT} :	//mul and div
-																		exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP} :	//mul and div
+																		exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT} :	//mul and div
 																		id_stall_req ? {`STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT} :	//data hazard
 																		if_stall_req ? {`STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} :	//fetch inst
 																					   {`STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} ;	//default
