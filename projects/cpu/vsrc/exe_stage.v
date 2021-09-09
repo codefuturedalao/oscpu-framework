@@ -27,6 +27,10 @@ module exe_stage(
 	//for self defined inst
 	input wire [`INST_BUS] inst,
   
+
+	output wire uart_valid,
+	output wire [7 : 0] uart_ch,
+
 //	output wire mul_valid,
 	output wire div_valid,
 	output wire div_32,
@@ -38,12 +42,22 @@ module exe_stage(
 	output wire b_flag			//indicate branch is successful or not
 
 );
+
+`ifdef SELF_DEF
+assign uart_valid = inst == `INST_DISPLAY;
+assign uart_ch = new_rs1_data[7 : 0];
+`else
+assign uart_valid = 1'b0;
+assign uart_ch = 8'h0;
+`endif
+/*
 always
 	@(*) begin
 		if(inst == `INST_DISPLAY) begin
 			$write("%c", new_rs1_data[7 : 0]);
 		end
 	end
+*/
 
 wire [`REG_BUS] new_rs1_data_t;
 wire [`REG_BUS] new_rs2_data_t;

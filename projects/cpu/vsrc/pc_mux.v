@@ -10,6 +10,7 @@ module pc_mux(
 );
 	wire [`REG_BUS] result;
 	assign result = old_pc + 4;
-	assign new_pc = exception_transfer ? exception_target_pc : (control_transfer == 1 ? control_target_pc : result);
+	//assign new_pc = exception_transfer ? exception_target_pc : (control_transfer == 1 ? control_target_pc : result);
+	assign new_pc = exception_transfer ? exception_target_pc - 4 : (control_transfer == 1 ? control_target_pc - 4 : result);
 
 endmodule

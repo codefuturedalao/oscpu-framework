@@ -1,5 +1,4 @@
-//assume load and store are align
-
+//assume load and store are align 
 `include "defines.v"
 
 module id_stage(
@@ -193,13 +192,24 @@ assign exception_cause = {5{inst_ecall}} & `ECALL
 					|	 {5{inst_ebreak}} & `BREAK_POINT;
 
 
+`ifdef SELF_DEF
+assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : (inst[7 : 0] == 8'h7b) ? 10 : rs1;
+`else
 assign rs1_r_addr = ( rst == 1'b1 ) ? 0 : rs1;
+`endif
 assign rs2_r_addr = ( rst == 1'b1 ) ? 0 : rs2;
 assign rd_w_addr  = ( rst == 1'b1 ) ? 0 : rd;
 
+`ifdef SELF_DEF
+assign rs1_r_ena = opcode_jalr | opcode_branch | opcode_imm | opcode_imm32 
+		| opcode_op | opcode_op32 | opcode_store | opcode_load
+		| inst_csrrw | ((inst_csrrc | inst_csrrs) & |rs1_r_addr)
+		| (inst[7 : 0] == 8'h7b);
+`else
 assign rs1_r_ena = opcode_jalr | opcode_branch | opcode_imm | opcode_imm32 
 		| opcode_op | opcode_op32 | opcode_store | opcode_load
 		| inst_csrrw | ((inst_csrrc | inst_csrrs) & |rs1_r_addr);
+`endif
 assign rs2_r_ena = opcode_branch | opcode_store | opcode_op | opcode_op32;
 assign rd_w_ena = opcode_lui | opcode_auipc | opcode_jal | opcode_jalr
 		| opcode_load | opcode_op | opcode_op32 | opcode_imm | opcode_imm32

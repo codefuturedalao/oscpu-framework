@@ -8,6 +8,10 @@ module rvcpu(
 	input wire            clk,
 	input wire            rst,
 
+
+	input wire time_irq,
+	input wire sip,
+
 	/* if stage */
 	input wire if_ready,
 	input wire if_dvalid,
@@ -44,11 +48,19 @@ module rvcpu(
 	output wire diff_wb_inst_valid,
 	output wire [`REG_BUS] regs[0 : 31],
 
+
+	output wire uart_valid,
+	output wire [7 : 0] uart_ch,
+	output wire interrupt,
+
 	output wire [`MXLEN-1 : 0] diff_mscratch,
 	output wire [`MXLEN-1 : 0] diff_mstatus,
+	output wire [`MXLEN-1 : 0] diff_sstatus,
 	output wire [`MXLEN-1 : 0] diff_mcause,
 	output wire [`MXLEN-1 : 0] diff_mepc,
-	output wire [`MXLEN-1 : 0] diff_mtvec
+	output wire [`MXLEN-1 : 0] diff_mtvec,
+	output wire [`MXLEN-1 : 0] diff_mip,
+	output wire [`MXLEN-1 : 0] diff_mie
 );
 
 // hazard_unit
@@ -318,7 +330,9 @@ wire ex_rs1_sign;
 wire ex_rs2_sign;
 
 wire ex_exception_flag;
+wire ex_exception_flag_int;
 wire [4 : 0] ex_exception_cause;
+wire [4 : 0] ex_exception_cause_int;
 
 id_ex Id_ex(
 	.clk(clk),
@@ -444,6 +458,9 @@ exe_stage Exe_stage(
 	
 	.inst(ex_inst),
 
+	.uart_valid(uart_valid),
+	.uart_ch(uart_ch),
+
 	.mul_result(mul_result),
 	//.mul_ready(mul_ready),
 	//.mul_valid(mul_valid),
@@ -507,6 +524,21 @@ assign div_result = {`ZERO_WORD, `ZERO_WORD};
 assign div_ready = 1'b1;
 
 `endif
+
+/* interrupt */
+wire time_int;
+wire soft_int;
+int_detect Int_detect(
+	.ex_exception_flag_i(ex_exception_flag),
+	.ex_exception_flag_o(ex_exception_flag_int),
+
+	.inst_valid(ex_inst_valid),
+	.time_int(time_int),
+	.soft_int(soft_int),
+	
+	.ex_exception_cause_i(ex_exception_cause),
+	.ex_exception_cause_o(ex_exception_cause_int)
+);
 	
 
 /* ex_me flip flop */
@@ -559,8 +591,8 @@ ex_me Ex_me(
 	.ex_csr_wena(ex_csr_wena),
 	.ex_csr_op(ex_csr_op),
 	.ex_csr_addr(ex_csr_addr),
-	.ex_exception_flag(ex_exception_flag),
-	.ex_exception_cause(ex_exception_cause),
+	.ex_exception_flag(ex_exception_flag_int),
+	.ex_exception_cause(ex_exception_cause_int),
 	
 	.me_target_pc(me_target_pc),
 	.me_branch(me_branch),
@@ -624,7 +656,7 @@ lsu Lsu(
 	.ex_alu_result(ex_alu_result),
 	.ex_mem_wdata(ex_new_rs2_data),
 	.me_control_transfer(hazard_control_transfer),
-	.ex_exception_flag(ex_exception_flag),
+	.ex_exception_flag(ex_exception_flag_int),
 	.me_exception_flag(me_exception_flag),
 	.wb_exception_flag(wb_exception_flag),
 
@@ -774,7 +806,7 @@ assign diff_wb_rd_waddr = wb_rd_waddr;
 assign diff_wb_rd_data = wb_rd_data;
 assign diff_wb_pc = wb_pc;
 assign diff_wb_inst = wb_inst;
-assign diff_wb_inst_valid = wb_inst_valid & (me_wb_stall != `STALL_KEEP);
+assign diff_wb_inst_valid = wb_inst_valid & (me_wb_stall != `STALL_KEEP) & ~(wb_exception_flag & wb_exception_cause[4]);
 
 wire [63 : 0] csr_data;
 rd_wmux Rd_wmux(
@@ -793,6 +825,7 @@ rd_wmux Rd_wmux(
 	.rd_wena_o(wb_rd_wena)
 );
 
+assign interrupt = wb_inst_valid & wb_exception_flag & wb_exception_cause[4];
 
 csr Csr(
 	.clk(clk),
@@ -804,6 +837,11 @@ csr Csr(
 	.csr_op(wb_csr_op),
 	.csr_wdata(wb_alu_result),
 	//.rs1_data(wb_new_rs1_data),
+	.time_irq(time_irq),
+	.soft_irq(sip),
+
+	.time_int(time_int),
+	.soft_int(soft_int),
 
 	.exception_flag(wb_exception_flag),
 	.exception_cause(wb_exception_cause),
@@ -816,9 +854,12 @@ csr Csr(
 	//difftest
 	.diff_mscratch(diff_mscratch),
 	.diff_mstatus(diff_mstatus),
+	.diff_sstatus(diff_sstatus),
 	.diff_mcause(diff_mcause),
 	.diff_mepc(diff_mepc),
-	.diff_mtvec(diff_mtvec)
+	.diff_mtvec(diff_mtvec),
+	.diff_mip(diff_mip),
+	.diff_mie(diff_mie)
 );
 
 

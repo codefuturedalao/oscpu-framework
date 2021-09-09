@@ -46,7 +46,9 @@ module hazard_unit(
 	assign exception_transfer_o = (~if_stall_req & exception_transfer_i) ? exception_transfer_i : exception_transfer_r;
 	assign control_target_pc_o = (~if_stall_req & control_transfer) ? control_target_pc_i : control_target_pc_r;
 	assign exception_target_pc_o = (~if_stall_req & exception_transfer_i) ? exception_target_pc_i : exception_target_pc_r;
-*/	assign control_transfer_o =  control_transfer | control_transfer_r;
+*/
+/*
+	assign control_transfer_o =  control_transfer | control_transfer_r;
 	assign exception_transfer_o = exception_transfer_i | exception_transfer_r;
 	assign control_target_pc_o =  control_target_pc_i | control_target_pc_r;
 	assign exception_target_pc_o = exception_target_pc_i | exception_target_pc_r;
@@ -85,12 +87,18 @@ module hazard_unit(
 			
 		end
 
+*/
+	assign control_transfer_o = control_transfer;
+	assign exception_transfer_o = exception_transfer_i;
+	assign control_target_pc_o = control_target_pc_i;
+	assign exception_target_pc_o = exception_target_pc_i;
 
 	wire id_stall_req = (ex_csr_rena == 1'b1 && ((id_rs1_rena == 1'b1 && id_rs1_addr == ex_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == ex_rd_waddr)))
 					| 	(ex_mem_rena == 1'b1 && ((id_rs1_rena == 1'b1 && id_rs1_addr == ex_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == ex_rd_waddr)));
 
 	assign control_transfer = ((b_flag & branch) | jump) & ~exception_transfer_i;
 
+/*
 	// if stall conflicts with transfer	and when stalled by other reason, should have reg to keep value
 																							//if		//id		//ex		//mem		//wb
 	assign {pc_stall, if_id_stall, id_ex_stall, ex_me_stall, me_wb_stall} = 
@@ -111,6 +119,15 @@ module hazard_unit(
 																		if_stall_req ? {`STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} :	//fetch inst
 																					   {`STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} ;	//default
 
+*/
+	assign {pc_stall, if_id_stall, id_ex_stall, ex_me_stall, me_wb_stall} = 
+														exception_transfer_i ? {`STALL_EXCEPT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO} :
+														control_transfer     ? {`STALL_EXCEPT, `STALL_ZERO, `STALL_ZERO, `STALL_ZERO, `STALL_NEXT} :	//control hazard
+														mem_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO} :	//load and store
+														exe_stall_req? {`STALL_KEEP, `STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT} :	//mul and div
+														id_stall_req ? {`STALL_KEEP, `STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT} :	//data hazard
+														if_stall_req ? {`STALL_KEEP, `STALL_ZERO, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} :	//fetch inst
+																   {`STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT, `STALL_NEXT} ;	//default
 /*
 		else if(me_csr_rena == 1'b1 &&  ((id_rs1_rena == 1'b1 && id_rs1_addr == me_rd_waddr) || (id_rs2_rena == 1'b1 && id_rs2_addr == me_rd_waddr)) ) begin
 

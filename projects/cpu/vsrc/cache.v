@@ -87,6 +87,7 @@ module cache #(
 	/*	input signal	*/
 	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && req_op == 1'b0 && w_state_write && write_buffer_offset[3] == offset[3]);		//write tag, read tag in store conflict
 	wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[`BANK_BITSEL] == request_buffer_offset[`BANK_BITSEL]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[`BANK_BITSEL] == offset[`BANK_BITSEL]);
+	//wire conflict = (req_valid == 1'b1 && req_op == 1'b0 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[`BANK_BITSEL] == request_buffer_offset[`BANK_BITSEL]) | (req_valid == 1'b1 && w_state_write && (offset[`BANK_BITSEL] == write_buffer_offset[`BANK_SEL]));
 	//wire conflict = (req_valid == 1'b1 && whit && tag == request_buffer_tag && index == request_buffer_index && offset[3] == request_buffer_offset[3]) | (req_valid == 1'b1 && w_state_write && write_buffer_offset[3] == offset[3]);
 	wire req_rvalid = req_valid & (req_op == 1'b0) & ~conflict;
 	wire req_wvalid = req_valid & (req_op == 1'b1) & ~conflict;	//no need to test conflict
@@ -121,10 +122,12 @@ module cache #(
 						if(hit && (req_valid == 1'b0 | conflict == 1'b1)) begin
 							m_state <= M_STATE_IDLE;
 						end
-						else if((request_buffer_cacheable == 1'b1 & hit == 1'b0 & ((way_valid & way_dirty) == 1'b1)) | (request_buffer_op == 1'b1 & request_buffer_cacheable == 1'b0)) begin
+
+						//else if((request_buffer_cacheable == 1'b1 & hit == 1'b0 & ((way_valid & way_dirty) == 1'b1)) | (request_buffer_op == 1'b1 & request_buffer_cacheable == 1'b0)) begin
+						else if((request_buffer_cacheable == 1'b1 & hit == 1'b0 & way_valid == 1'b1) | (request_buffer_op == 1'b1 & request_buffer_cacheable == 1'b0)) begin
 							m_state <= M_STATE_MISS;	
 						end
-						else if((hit == 1'b0 & (way_valid & way_dirty) == 1'b0) | (request_buffer_op == 1'b0 & request_buffer_cacheable == 1'b0)) begin
+						else if((request_buffer_cacheable == 1'b1 & hit == 1'b0 & way_valid == 1'b0) | (request_buffer_op == 1'b0 & request_buffer_cacheable == 1'b0)) begin
 							m_state <= M_STATE_REFILL;							//no need to write back, just refill
 							if(request_buffer_cacheable) begin
 								counter_max <= BANK_NUM_PER_WAY;
@@ -202,7 +205,7 @@ module cache #(
 				assign data_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid)  && (offset[`BANK_BITSEL] == (i & `BANK_MASK))) 			//store don't read data, only read tag
 				| (w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)
 				| (m_state_miss && waxi_ready == 1'b1 && (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1))
-				| (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)) ? `CHIP_EN : `CHIP_DI;	
+				| (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1) & request_buffer_cacheable == 1'b1) ? `CHIP_EN : `CHIP_DI;	
 
 			end
 	endgenerate
@@ -210,7 +213,7 @@ module cache #(
 	generate
 			for(genvar i = 0;i < BANK_NUM; i = i + 1) begin: idle_data_we
 				assign data_we[i] = (w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1) & 1'b1 
-								 |  (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)) & 1'b1;
+								 |  (m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & (miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1) & request_buffer_cacheable == 1'b1) & 1'b1;
 				assign data_wstrb[i] = {STRB_LEN{(w_state_write & (write_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & write_buffer_wayhit[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1)}} & write_buffer_strb
 								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & ((request_buffer_offset[`BANK_BITSEL] != (i & `BANK_MASK)) | request_buffer_op == 1'b0))}} & 8'b1111_1111)
 								| ({STRB_LEN{(m_state_refill & raxi_dvalid & (counter == (i & `BANK_MASK)) & miss_buffer_replace_way[(i & `WAY_MASK) >> BANK_PERWAY_LEN] == 1'b1 & (request_buffer_offset[`BANK_BITSEL] == (i & `BANK_MASK)) & request_buffer_op == 1'b1)}} & 8'b1111_1111);
@@ -239,14 +242,14 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_tag_cs
 				assign tag_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid)) 
-								|  ((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1)) 
+								|  ((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1) & request_buffer_cacheable == 1'b1) 
 					? `CHIP_EN : `CHIP_DI;
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_tag_we
-				assign tag_we[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1);
+				assign tag_we[i] = (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1 & request_buffer_cacheable == 1'b1);
 			end
 	endgenerate
 	//assign tag_we = {WAY_NUM{1'b0}};		//read the tag, write whe refill
@@ -267,26 +270,26 @@ module cache #(
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_cs
 				//assign dirty_cs[i] = ((m_state_lookup | m_state_idle) && (req_rvalid | req_wvalid)) | (w_state_write && write_buffer_wayhit[i & 1'b1] == 1'b1) ? `CHIP_EN : `CHIP_DI;
-				assign dirty_cs[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))		//store : read the dirty tag
-								|    (w_state_write && write_buffer_wayhit[i] == 1'b1) 
-								|	 (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1)? `CHIP_EN : `CHIP_DI;		//don't read in the idle and lookup stage
+				//assign dirty_cs[i] = ((m_state_idle | m_state_lookup) & (req_rvalid | req_wvalid))		//store : read the dirty tag, load read the dirty tag , and use it when miss
+				assign dirty_cs[i] =  (w_state_write && write_buffer_wayhit[i] == 1'b1) 
+								|	 (request_buffer_op == 1'b1 & m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1 & request_buffer_cacheable == 1'b1)? `CHIP_EN : `CHIP_DI;		//don't read in the idle and lookup stage
 			end
 	endgenerate
 
 	//assign dirty_we = {WAY_NUM{1'b0}};		//read the tag
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_we
-				assign dirty_we[i] = ((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1)) & 1'b0
-									|(w_state_write & write_buffer_wayhit[i] == 1'b1) & 1'b1
-									|(m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1) & 1'b1;
+				//assign dirty_we[i] = ((m_state_idle | m_state_lookup) & (req_rvalid | req_wvalid)) & 1'b0
+				assign dirty_we[i] = (w_state_write & write_buffer_wayhit[i] == 1'b1) & 1'b1
+									|(request_buffer_op == 1'b1 & m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1 & request_buffer_cacheable == 1'b1) & 1'b1;
 			end
 	endgenerate
 
 	generate
 			for(genvar i = 0;i < WAY_NUM; i = i + 1) begin: idle_dirty_addr
 				assign dirty_addr[i] = {INDEX_LEN{w_state_write}} & write_buffer_index 
-									|  {INDEX_LEN{((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1))}} & miss_buffer_replace_index
-									|  {INDEX_LEN{((m_state_idle | m_state_lookup) & (req_wvalid == 1'b1))}} & index;
+									|  {INDEX_LEN{((m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1))}} & miss_buffer_replace_index;
+				//					|  {INDEX_LEN{((m_state_idle | m_state_lookup) & (req_rvalid | req_wvalid))}} & index;
 				assign dirty_din[i] = (w_state_write | (m_state_refill & raxi_dvalid & miss_buffer_replace_way[i] == 1'b1 && request_buffer_op == 1'b1)) ? 1'b1 : 1'b0;		//only write
 			end
 	endgenerate
@@ -366,7 +369,7 @@ module cache #(
 								   : ((^lfsr_data) ? 2'b01 : 2'b10));
 	//wire [WAY_LEN - 1 : 0] replace_way_sel = way_sel == 2'b01 ? 1'b0 : 1'b1;
 	//miss
-	wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
+	//wire way_dirty = (way_sel[0] & dirty_dout[0]) | (way_sel[1] & dirty_dout[1]);
 	wire way_valid = (way_sel[0] & tag_dout[0][TAG_LEN]) | (way_sel[1] & tag_dout[1][TAG_LEN]);
 
 	/*wire [BLOCK_LEN - 1 : 0] replace_data = {BLOCK_LEN{way_sel[0]}} & (way_data[0])
@@ -405,7 +408,7 @@ module cache #(
 	
 	assign waxi_valid = m_state_replace;
 	//assign waxi_data = miss_buffer_replace_data;
-	assign waxi_data = replace_data;
+	assign waxi_data = request_buffer_cacheable ? replace_data : request_buffer_wdata;		//TODO: wdata = data << offset[2 : 0] & mask, may be dont have to do this, we should considerate how axi_rw deal with the data
 	assign waxi_size = request_buffer_cacheable ? `SIZE_L : request_buffer_wsize;
 	assign waxi_addr = request_buffer_cacheable ? {miss_buffer_replace_tag[TAG_LEN - 1 : 0], miss_buffer_replace_index, {OFFSET_LEN{1'b0}}} : {request_buffer_tag, request_buffer_index, request_buffer_offset};
 	//refill

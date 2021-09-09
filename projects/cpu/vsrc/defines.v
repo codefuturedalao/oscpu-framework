@@ -1,7 +1,8 @@
 
 `timescale 1ns / 1ps
 `define CACHE
-`define DEBUG
+//`define DEBUG
+`define SELF_DEF
 
 `define PC_START   64'h00000000_80000000  
 `define PC_START_MINUS4   64'h00000000_7ffffffC  
@@ -40,6 +41,7 @@
 `define STALL_NEXT  2'b00
 `define STALL_KEEP	2'b01
 `define STALL_ZERO	2'b10
+`define STALL_EXCEPT	2'b11
 //opcode
 `define OP_IMM 7'b0010011
 `define OP_IMM32 7'b0011011
@@ -54,7 +56,7 @@
 `define STORE 7'b0100011
 `define SYSTEM 7'b1110011
 `define CUS0 7'b0001011
-`define INST_DISPLAY 32'h0005_2013
+`define INST_DISPLAY 32'h0000_007b
 //0000000_00000_01010_000_00000_0001011 write() 0005000B
 
 //func3
@@ -179,9 +181,11 @@
 
 `define CSR_CYCLE 12'hB00
 `define CSR_MSTATUS	12'h300
+`define CSR_MIE		12'h304
 `define CSR_MTVEC 12'h305
 `define CSR_MEPC  12'h341
 `define CSR_MCAUSE 12'h342
+`define CSR_MIP		12'h344
 `define CSR_MHARTID 12'hf14
 `define CSR_MSCRATCH 12'h340
 
@@ -201,6 +205,9 @@
 `define LOAD_PAGE_FAULT		5'b0_1101
 //reserved for furture standard use
 `define STORE_PAGE_FAULT	5'b0_1111
+`define TIME_INT			5'b1_0111
+`define SOFT_INT			5'b1_0011
+`define EXTERN_INT			5'b1_1011
 
 
 `ifdef CACHE

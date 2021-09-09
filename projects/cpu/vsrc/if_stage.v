@@ -34,6 +34,13 @@ always
 			state <= ISSUE;
 			pc <= `PC_START_MINUS4;
 		end	
+		else if(stall == `STALL_EXCEPT) begin
+			data_r <= `ZERO_WORD;
+			data_r_2 <= `ZERO_WORD;
+			data_r_2_valid <= 1'b0;
+			state <= ISSUE;
+			pc <= new_pc;
+		end
 		else begin
 			case(state)
 				ISSUE: begin				//first instruction

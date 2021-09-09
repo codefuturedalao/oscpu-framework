@@ -105,15 +105,22 @@ wire [`REG_BUS] wb_inst;
 wire wb_inst_valid;
 wire [`REG_BUS] regs[0 : 31];		//directly from regfile
 
+wire interrupt;
 wire [`MXLEN-1 : 0] mscratch;
 wire [`MXLEN-1 : 0] mstatus;
+wire [`MXLEN-1 : 0] sstatus;
 wire [`MXLEN-1 : 0] mcause;
 wire [`MXLEN-1 : 0] mepc;
 wire [`MXLEN-1 : 0] mtvec;
+wire [`MXLEN-1 : 0] mie;
+wire [`MXLEN-1 : 0] mip;
 
 rvcpu Rvcpu(
 	.clk(clock),
 	.rst(reset),
+
+	.time_irq(clint_time_irq),
+	.sip(clint_sip),
 
 	.if_ready(if_ready),
 	.if_dvalid(if_dvalid),
@@ -152,11 +159,18 @@ rvcpu Rvcpu(
 	.diff_wb_inst_valid(wb_inst_valid),
 	.regs(regs),
 
+	.uart_valid(io_uart_out_valid),
+	.uart_ch(io_uart_out_ch),
+	.interrupt(interrupt),
+
 	.diff_mscratch(mscratch),
 	.diff_mstatus(mstatus),
+	.diff_sstatus(sstatus),
 	.diff_mcause(mcause),
 	.diff_mepc(mepc),
-	.diff_mtvec(mtvec)
+	.diff_mtvec(mtvec),
+	.diff_mip(mip),
+	.diff_mie(mie)
 );
 
     wire aw_ready;
@@ -591,12 +605,12 @@ reg [`REG_BUS] cmt_wdata;
 reg [`REG_BUS] cmt_pc;
 reg [31:0] cmt_inst;
 reg cmt_valid;
+reg cmt_interrupt;
 reg skip;
 reg trap;
 reg [7:0] trap_code;
 reg [63:0] cycleCnt;
 reg [63:0] instrCnt;
-//reg [`REG_BUS] regs_diff [0 : 31];
 
 always @(posedge clock) begin
   if (reset) begin
@@ -610,8 +624,11 @@ always @(posedge clock) begin
     cmt_inst <= wb_inst;
     cmt_valid <= wb_inst_valid;
 
+	cmt_interrupt <= interrupt;
  //   regs_diff <= regs;
-	skip <= (wb_inst == 32'hb0079073) | (wb_pc == 64'h0000_0000_8000_89c0);
+	//skip <= (wb_pc == 64'h0000_0000_8000_89c0);
+	//skip <= wb_inst == `INST_DISPLAY | wb_inst == 32'hb000_24f3 | wb_inst == 32'hb000_2973 | wb_inst == 32'h00063783 | wb_inst == 32'h00f63023;
+	skip <= wb_inst == `INST_DISPLAY | wb_inst == 32'hb000_24f3 | wb_inst == 32'hb000_2973 | wb_pc[31 : 0] == 32'h80008928 | wb_pc[31 : 0] == 32'h800089c0 | wb_pc[31 : 0] == 32'h800089b0 | wb_pc[31 : 0] == 32'h800089f4 | wb_pc[31 : 0] == 32'h8000895c;// | wb_pc[31 : 0] == 32'h8000018c;
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
     cycleCnt <= 1 + cycleCnt;
@@ -682,12 +699,21 @@ DifftestTrapEvent DifftestTrapEvent(
   .instrCnt           (instrCnt)
 );
 
+DifftestArchEvent DifftestArchEvent(
+  .clock              (clock),
+  .coreid             (0),
+  .intrNO			  (cmt_interrupt ? 7 : 0),
+  .cause			  (0),
+  .exceptionPC	      (cmt_pc),
+  .exceptionInst      (cmt_inst)
+);
+
 DifftestCSRState DifftestCSRState(
   .clock              (clock),
   .coreid             (0),
   .priviledgeMode     (3),
   .mstatus            (mstatus),
-  .sstatus            (0),
+  .sstatus            (sstatus),
   .mepc               (mepc),
   .sepc               (0),
   .mtval              (),
@@ -697,8 +723,9 @@ DifftestCSRState DifftestCSRState(
   .mcause             (mcause),
   .scause             (0),
   .satp               (0),
+  //.mip                (mip),
   .mip                (0),
-  .mie                (0),
+  .mie                (mie),
   .mscratch           (mscratch),
   .sscratch           (0),
   .mideleg            (0),
