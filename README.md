@@ -41,6 +41,8 @@ environment : vim + verilator + difftest + nemu + gtkwave
 
 2021.8.24 : Add 8kB Icache and 8KB Dcache, 2 way set, blocksize = 32bytes, Pseudo-random replacement algorithm using lfsr
 
+2021.9.9  : run RT-thread successfully
+
 ## DOING:
 * optimize cpu by reading *CPU Design can Practive* (author: WenXiang Wang), some instructions' implement needs to be rethinked, e.g. shift
 	* memory mask signal generate method				[done]
@@ -52,5 +54,4 @@ environment : vim + verilator + difftest + nemu + gtkwave
 ## TODO:
 * Branch prediction
 * improve cpu's perfomance by switching to other micor-architecture like superscalar, out-of-order, more stages pipeline
-* debug with RT-thread
 	
